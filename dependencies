@@ -1,0 +1,6 @@
+jupyter                   1.0.0            py38h578d9bd_7    conda-forge
+pandas                    1.4.3            py38h47df419_0    conda-forge
+pyarrow                   8.0.0                    pypi_0    pypi
+pymongo                   4.1.1            py38hfa26641_0    conda-forge
+python                    3.8.13          h582c2e5_0_cpython    conda-forge
+mmb_data
