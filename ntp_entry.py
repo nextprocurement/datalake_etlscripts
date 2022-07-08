@@ -25,6 +25,39 @@ def parse_parquet(pd_data_row, new_cols):
         new_data[new_cols.loc[k]['DBFIELD']] = pd_data_row[k]
     return new_data
 
+class NtpStorage:
+    def __init__(self, type='disc', **kwargs):
+        self.type = type
+        if type == 'disc':
+            self.data_dir = kwargs['data_dir']
+        elif type == 'gridfs':
+            self.gridfs = kwargs['gridfs_obj']
+        elif type == 'swift':
+            self.swift_connection = kwargs['swift_connection']
+            self.swift_container = kwargs['swift_container']
+            self.swift_prefix = kwargs['swift_prefix']
+    
+    def file_store(self, file_name, contents):   
+        if self.type == 'disc':
+            with open(f"{self.data_dir}/{file_name}", 'bw') as output_file:
+                    output_file.write(contents)
+        elif self.type == 'gridfs':
+            self.gridfs.put(contents, filename=file_name)
+        elif self.type == 'swift':
+            self.swift_connection.put_object(
+                self.swift_container,
+                f"{self.swift_prefix}/{file_name}",
+                contents=contents
+            )
+    
+    def file_exists(self, file_name):
+        if self.type == 'disc':
+            return False
+        elif self.type == 'gridfs':
+            return False
+        elif self.type == 'swift':
+            return False
+    
 class NtpEntry:
     def __init__(self):
         self.ntp_order = 0
@@ -73,32 +106,17 @@ class NtpEntry:
     def download_document(
             self, 
             field,
-            towhere='disk', 
-            tmpdir='/tmp', 
-            grid_fs_col='',
+            storage=None,
             update=False
             ):
         file_name = f'{self.ntp_id}_{field}.pdf'
-        if update or not self.check_file_exists(
-                file_name, 
-                towhere=towhere,
-                tmpdir=tmpdir, 
-                grid_fs_col=grid_fs_col
-                ):  
+        if update or not storage.file_exists(file_name):  
             url = self.data[field]
             r = requests.get(url, stream=True)
             if r.status_code == 200:
                 if 'Content-type' not in r.headers or r.headers['Content-type'].startswith('text/html') :
                     return False
-                if towhere == 'disc':
-                    with open(f"{tmpdir}/{file_name}", 'bw') as output_file:
-                        output_file.write(r.content)
-                elif towhere == 'gridfs':
-                    grid_fs_col.put(r.content, filename=file_name)
-                elif towhere == 'swift':
-                    pass
+                storage.file_store(file_name, r.content)
             return True
         return False
-        
-        def check_file_exists(self, file_name, towhere, tmpdir, grid_fs_col):
-            return False
+    

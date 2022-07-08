@@ -2,6 +2,8 @@
 # coding: utf-8
 from mmb_data.mongo_db_connect import Mongo_db
 import sys
+import swiftclient as sw
+import swift_secrets as ss
 # import re
 import argparse
 # import json
@@ -101,10 +103,33 @@ def main():
     parser.add_argument('--where', action='store', default='disc', choices=['disc', 'gridfs', 'swift'])
     args = parser.parse_args()
 
+    print("Connecting to MongoDB")
     db_lnk = Mongo_db('mdb-login.bsc.es', 'nextprocurement', False, True)
     incoming_col = db_lnk.get_collections(['incoming','contratos'])['incoming']
-    documents_gfs = db_lnk.get_gfs('downloadedDocuments')
-
+    print("Connecting to storage...")
+    if args.where == 'disc':
+        storage = ntp.NtpStorage(type='disc', data_dir='/tmp')
+    elif args.where == 'gridfs':
+        storage = ntp.NtpStorage(type='gridfs', gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
+    elif args.where == 'swift':
+        swift_conn = sw.Connection(
+            authurl=ss.OS_AUTH_URL, 
+            auth_version=3,
+            os_options = {
+                'auth_type': ss.OS_AUTH_TYPE,
+                'region_name': ss.OS_REGION_NAME,
+                'application_credential_id': ss.OS_APPLICATION_CREDENTIAL_ID,
+                'application_credential_secret': ss.OS_APPLICATION_CREDENTIAL_SECRET,
+                'service_project_name': 'bsc22NextProcurement'
+            }
+        )
+        storage = ntp.NtpStorage(
+            type='swift', 
+            swift_connection=swift_conn,
+            swift_container='nextp-data',
+            swift_prefix='data'
+        )
+    print("Getting ids...")
     # Getting ids
     query = [{}]
     if args.ini is not None:
@@ -125,14 +150,10 @@ def main():
         ntp_id = id['_id']
         doc = ntp.NtpEntry()
         doc.load_from_db(incoming_col, ntp_id)
-        print(vars(doc))
-        for url_field in doc.extract_url():
+        #print(vars(doc))
+        for url_field in doc.extract_urls():
             print(url_field, doc.data[url_field])
-            if doc.download_document(
-                    url_field, 
-                    towhere=args.where,
-                    grid_fs_col=documents_gfs
-                ):
+            if doc.download_document(url_field, storage=storage):
                 print("Downloaded")
             else:
                 print("Skipped, not a pdf")
