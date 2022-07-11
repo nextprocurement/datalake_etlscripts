@@ -33,7 +33,7 @@ def main():
     parser.add_argument('--fin', action='store', help="Final document range")
     parser.add_argument('--id', action='store', help="Selected document id")
     parser.add_argument('--where', action='store', default='disc', choices=['disc', 'gridfs', 'swift'], help="Selected storage (disk|gridfs|swift)")
-    parser.add_argument('--config'  action='store' default='secrets.yml', help="Configuration file (default;secrets.yml)")
+    parser.add_argument('--config', action='store', default='secrets.yml', help="Configuration file (default;secrets.yml)")
     args = parser.parse_args()
 
     # Config file
@@ -45,7 +45,7 @@ def main():
         config['MONGODB_HOST'],
         'nextprocurement', 
         False, 
-        config['MONGODB_AUTH']
+        config['MONGODB_AUTH'],
         credentials=config['MONGODB_CREDENTIALS']
     )
     incoming_col = db_lnk.get_collections(['incoming','contratos'])['incoming']

@@ -5,14 +5,9 @@ import pandas as pd
 import sys
 import argparse
 from yaml import load, CLoader
-
-
-
 import ntp_entry as ntp
 from mmb_data.mongo_db_connect import Mongo_db
 
-MONGODB_HOST = 'mdb-login.bsc.es'
-MONGODB_AUTH = True
 
 def main():
     # usage: read_parquet.py [-h] [--drop] codes_file pkt_file
@@ -65,8 +60,10 @@ def main():
     for i in data_table.index:
         data_row = data_table.iloc[i].to_dict().copy()
         id_num += 1
-        new_data = ntp.NtpEntry(id_num, ntp.parse_parquet(data_row, new_cols))
+        new_data = ntp.NtpEntry()
+        new_data.load_data(id_num, ntp.parse_parquet(data_row, new_cols))
         new_data.commit_to_db(incoming_col)
+        print("Processed", new_data.ntp_id)
 
 if __name__ == "__main__":
     main()    
