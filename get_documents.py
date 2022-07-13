@@ -2,7 +2,6 @@
 # coding: utf-8
 from mmb_data.mongo_db_connect import Mongo_db
 import sys
-from swift_secrets import MONGODB_HOST
 import swiftclient as sw
 import argparse
 from yaml import load, CLoader
