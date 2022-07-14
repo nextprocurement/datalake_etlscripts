@@ -4,6 +4,7 @@ import requests
 import numpy as np
 import sys
 import re
+import logging
 import argparse
 from mmb_data.mongo_db_connect import Mongo_db
 
@@ -15,9 +16,7 @@ def check_ntp_id(ntp_id):
 
 def parse_parquet(pd_data_row, new_cols):
     new_data = {}
-#    print(pd_data_row)
     for k in pd_data_row:
-#        print(k)
         if isinstance(pd_data_row[k], np.ndarray):
             pd_data_row[k] = list(pd_data_row[k])
         elif pd.isna(pd_data_row[k]):
@@ -51,6 +50,7 @@ class NtpStorage:
             )
     
     def file_exists(self, file_name):
+        #TODO
         if self.type == 'disc':
             return False
         elif self.type == 'gridfs':
@@ -80,11 +80,11 @@ class NtpEntry:
         try:
             new_id = col.insert_one(self.data)
         except Exception as e:
-            print(self.data)
+            logging.debug(self.data)
             for k in self.data:
-                print(k, self.data[k], type(self.data[k]))
-            print("ERROR",e)
-            sys.exit()
+                logging.debug(f"{k} {self.data[k]} {type(self.data[k])}")
+            logging.error(e)
+            sys.exit(1)
         return new_id
 
     def load_from_db(self, col_id,  ntp_id):
@@ -93,8 +93,8 @@ class NtpEntry:
             self.ntp_id = ntp_id
             self.ntp_order = parse_ntp_id(ntp_id)
         except Exception as e:
-            print(e)
-            sys.exit()
+            logging.error(e)
+            sys.exit(1)
 
     def extract_urls(self):
         urls = {}

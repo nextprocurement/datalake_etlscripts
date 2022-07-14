@@ -2,9 +2,9 @@
 # coding: utf-8
 from mmb_data.mongo_db_connect import Mongo_db
 import sys
-from swift_secrets import MONGODB_HOST
 import swiftclient as sw
 import argparse
+import logging
 from yaml import load, CLoader
 import requests
 import ntp_entry as ntp
@@ -40,7 +40,13 @@ def main():
     with open(args.config)  as config_file:
         config = load(config_file, Loader=CLoader)
     
-    print("Connecting to MongoDB")
+    logging.basicConfig(stream=sys.stdout, format='[%(asctime)s] %(levelname)s %(message)s', datefmt='%Y-%m-%d|%H:%M:%S')
+    if args.debug:
+        logging.getLogger().setLevel(10)
+    else:
+        logging.getLogger().setLevel(20)
+    logging.info("Connecting to MongoDB")
+    
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
         'nextprocurement', 
@@ -50,7 +56,7 @@ def main():
     )
     incoming_col = db_lnk.get_collections(['incoming','contratos'])['incoming']
 
-    print("Connecting to storage...")
+    logging.info("Connecting to storage...")
     if args.where == 'disc':
         storage = ntp.NtpStorage(type='disc', data_dir='/tmp')
     elif args.where == 'gridfs':
@@ -71,15 +77,15 @@ def main():
             type='swift', 
             swift_connection=swift_conn,
             swift_container='nextp-data',
-            swift_prefix='data'
+            swift_prefix='/data'
         )
 
-    print("Getting ids...")
-    if args.id:
+    logging.info("Getting ids...")
+    if args.id is not None:
         if ntp.check_ntp_id(args.id):
             query = {'_id': args.id}
         else:
-            print(f'--fin {args.fin} argument is not a valid ntp id')
+            logging.error(f'--id {args.id} argument is not a valid ntp id')
             sys.exit()
     else:
         query = [{}]
@@ -87,27 +93,26 @@ def main():
             if ntp.check_ntp_id(args.ini):
                 query.append({'_id':{'$gte': args.ini}})
             else:
-                print(f'--ini {args.ini} argument is not a valid ntp id')
+                logging.error(f'--ini {args.ini} argument is not a valid ntp id')
                 sys.exit()
         if args.fin is not None:
             if ntp.check_ntp_id(args.fin):
                 query.append({'_id':{'$lte': args.fin}})
             else:
-                print(f'--fin {args.fin} argument is not a valid ntp id')
+                logging.error(f'--fin {args.fin} argument is not a valid ntp id')
                 sys.exit()
 
     for id in list(incoming_col.find({'$and':query}, {'_id':1})):
         ntp_id = id['_id']
         doc = ntp.NtpEntry()
         doc.load_from_db(incoming_col, ntp_id)
-        #print(vars(doc))
 
         for url_field in doc.extract_urls():
             print(url_field, doc.data[url_field])
             if doc.download_document(url_field, storage=storage):
-                print("Downloaded")
+                logging.info("Downloaded")
             else:
-                print("Skipped, not a pdf")
+                logging.info("Skipped, html data only")
 
 if __name__ == "__main__":
     main()    
