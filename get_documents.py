@@ -1,71 +1,81 @@
 #!/usr/bin/env python
 # coding: utf-8
-from mmb_data.mongo_db_connect import Mongo_db
+''' Script to load PDF documents onto data_lake, takes input data from MongoDB
+    usage: get_documents.py [-h] [--update] [--ini INI] [--fin FIN] [--id ID]
+                             [--where {disc,gridfs,swift}]
+    Download documents
+
+    optional arguments:
+       -h, --help            show this help message and exit
+       -v, --verbose         Add extra progress information
+       --replace             Replace existing files
+       --ini INI             Initial document range
+       --fin FIN             Final document range
+       --id ID               Selected document id
+       --where {disk,gridfs,swift}
+                             Selected storage (disk|gridfs|swift). Default:disk
+       --config              Configuration file. Default:secrets.yml
+'''
 import sys
-import swiftclient as sw
 import argparse
 import logging
 from yaml import load, CLoader
-import requests
+import swiftclient as sw
 import ntp_entry as ntp
-
-tmpdir = "/tmp"
+import ntp_storage as ntpst
+from mmb_data.mongo_db_connect import Mongo_db
 
 def main():
-    # usage: get_documents.py [-h] [--update] [--ini INI] [--fin FIN] [--id ID]
-    #                         [--where {disc,gridfs,swift}]
-
-    # Download documents
-
-    # optional arguments:
-    #   -h, --help            show this help message and exit
-    #   --update              Add new files only
-    #   --ini INI             Initial document range
-    #   --fin FIN             Final document range
-    #   --id ID               Selected document id
-    #   --where {disc,gridfs,swift}
-    #                         Selected storage (disk|gridfs|swift)    
-    #   --config              Configuration file
-
+    ''' Main '''
     parser = argparse.ArgumentParser(description='Download documents')
-    parser.add_argument('--update', action='store_true', help="Add new files only")
-    parser.add_argument('--ini', action='store', help="Initial document range")
-    parser.add_argument('--fin', action='store', help="Final document range")
-    parser.add_argument('--id', action='store', help="Selected document id")
-    parser.add_argument('--where', action='store', default='disc', choices=['disc', 'gridfs', 'swift'], help="Selected storage (disk|gridfs|swift)")
-    parser.add_argument('--config', action='store', default='secrets.yml', help="Configuration file (default;secrets.yml)")
+    parser.add_argument('--replace', action='store_true', help='Replace existing files')
+    parser.add_argument('--ini', action='store', help='Initial document range')
+    parser.add_argument('--fin', action='store', help='Final document range')
+    parser.add_argument('--id', action='store', help='Selected document id')
+    parser.add_argument('--where', action='store', default='disk', choices=['disk', 'gridfs', 'swift'], help='Selected storage (disk|gridfs|swift)')
+    parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
+    parser.add_argument('--debug',action='store_true', help='Extra debug information')
     args = parser.parse_args()
 
     # Config file
-    with open(args.config)  as config_file:
+    with open(args.config, 'r')  as config_file:
         config = load(config_file, Loader=CLoader)
-    
+
+    # Setup logging
     logging.basicConfig(stream=sys.stdout, format='[%(asctime)s] %(levelname)s %(message)s', datefmt='%Y-%m-%d|%H:%M:%S')
     if args.debug:
         logging.getLogger().setLevel(10)
     else:
         logging.getLogger().setLevel(20)
+
     logging.info("Connecting to MongoDB")
-    
+
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
-        'nextprocurement', 
-        False, 
+        'nextprocurement',
+        False,
         config['MONGODB_AUTH'],
         credentials=config['MONGODB_CREDENTIALS']
     )
-    incoming_col = db_lnk.get_collections(['incoming','contratos'])['incoming']
 
-    logging.info("Connecting to storage...")
-    if args.where == 'disc':
-        storage = ntp.NtpStorage(type='disc', data_dir='/tmp')
+    incoming_col = db_lnk.get_collections(['incoming'])['incoming']
+
+    if args.verbose:
+        logging.info("Connecting to storage...")
+
+    if args.where == 'disk':
+        storage = ntpst.NtpStorageDisk(data_dir=config['TMPDIR'])
+        logging.info(f"Using disk storage at {config['TMPDIR']}")
     elif args.where == 'gridfs':
-        storage = ntp.NtpStorage(type='gridfs', gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
+        logging.info(f"Using GridFS storage")
+        storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
     elif args.where == 'swift':
+        logging.info(f"Using Swift storage")
         swift_conn = sw.Connection(
-            authurl=config['OS_AUTH_URL'], 
+            authurl=config['OS_AUTH_URL'],
             auth_version=3,
-            os_options = {
+            os_options={
                 'auth_type': config['OS_AUTH_TYPE'],
                 'region_name': config['OS_REGION_NAME'],
                 'application_credential_id': config['OS_APPLICATION_CREDENTIAL_ID'],
@@ -73,46 +83,53 @@ def main():
                 'service_project_name': 'bsc22NextProcurement'
             }
         )
-        storage = ntp.NtpStorage(
-            type='swift', 
+        storage = ntpst.NtpStorageSwift(
             swift_connection=swift_conn,
             swift_container='nextp-data',
             swift_prefix='/data'
         )
 
-    logging.info("Getting ids...")
-    if args.id is not None:
-        if ntp.check_ntp_id(args.id):
-            query = {'_id': args.id}
-        else:
-            logging.error(f'--id {args.id} argument is not a valid ntp id')
+    if args.verbose:
+        logging.info("Getting ids...")
+
+    for ntp_id in (args.id, args.ini, args.fin):
+        if ntp_id is not None and not ntp.check_ntp_id(ntp_id):
+            logging.error(f'{ntp_id} is not a valid ntp id')
             sys.exit()
+
+    if args.id is not None:
+        query = {'_id': args.id}
     else:
         query = [{}]
         if args.ini is not None:
-            if ntp.check_ntp_id(args.ini):
-                query.append({'_id':{'$gte': args.ini}})
-            else:
-                logging.error(f'--ini {args.ini} argument is not a valid ntp id')
-                sys.exit()
+            query.append({'_id':{'$gte': args.ini}})
         if args.fin is not None:
-            if ntp.check_ntp_id(args.fin):
-                query.append({'_id':{'$lte': args.fin}})
-            else:
-                logging.error(f'--fin {args.fin} argument is not a valid ntp id')
-                sys.exit()
+            query.append({'_id':{'$lte': args.fin}})
+        query = {'$and': query}
+    
+    num_ids = 0
+    for doc in list(incoming_col.find(query, {'_id':1})):
+        ntp_id = doc['_id']
+        if args.verbose:
+            logging.info(f'Processing {ntp_id}')
+        num_ids += 1
+        ntp_doc = ntp.NtpEntry()
+        ntp_doc.load_from_db(incoming_col, ntp_id)
+        for url_field in ntp_doc.extract_urls():
+            if args.debug:
+                logging.debug(f"{url_field}: {ntp_doc.data[url_field]}")
 
-    for id in list(incoming_col.find({'$and':query}, {'_id':1})):
-        ntp_id = id['_id']
-        doc = ntp.NtpEntry()
-        doc.load_from_db(incoming_col, ntp_id)
-
-        for url_field in doc.extract_urls():
-            print(url_field, doc.data[url_field])
-            if doc.download_document(url_field, storage=storage):
-                logging.info("Downloaded")
-            else:
-                logging.info("Skipped, html data only")
-
+            results = ntp_doc.store_document(url_field, replace=args.replace, storage=storage)
+            if args.verbose:
+                if results == 0:
+                    logging.info(f"File Stored as {ntp_doc.get_file_name(url_field)}")
+                elif results == 1:
+                    logging.info(f"{url_field} skipped, File already exists and --replace not set")
+                elif results == 2:
+                    logging.info(f"{url_field} skipped, html or empty file")
+                else:
+                    logging.warning("Unknown store condition")
+    if args.verbose:
+        logging.info(f"Processed {num_ids} entries")
 if __name__ == "__main__":
-    main()    
+    main()
