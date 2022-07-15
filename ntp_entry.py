@@ -84,8 +84,8 @@ class NtpEntry:
                 urls[k] = self.data[k]
         return urls
 
-    def get_file_name(self, field):
-        return f'{self.ntp_id}_{field}.pdf'
+    def get_file_name(self, field, ext):
+        return f'{self.ntp_id}_{field}.{ext}'
 
     def store_document(
             self,
@@ -93,26 +93,46 @@ class NtpEntry:
             storage=None,
             replace=False
             ):
-        file_name = self.get_file_name(field)
-        if replace or not storage.file_exists(file_name):
-            url = self.data[field]
-            r = requests.get(url, stream=True)
-            logging.debug(f"Headers: {r.headers}")
+        url = self.data[field]
+        try:
+            r = requests.head(url, timeout=5)
+            logging.debug(r.headers)
             if r.status_code == 200:
-                #TODO check headers for more options
-                not_valid_document = check_document(r.headers) 
-                if not_valid_document:
-                    return not_valid_document
+                doc_type = get_file_type(r.headers)
+                if doc_type in ('pdf', 'doc', 'docx', 'zip', '7z', 'xslx'):
+                    file_name = self.get_file_name(field, doc_type)
+                    if replace or not storage.file_exists(file_name):
+                        #r = requests.get(url, stream=True)
+                        #storage.file_store(file_name, r.content)
+                        return 0
+                    else:
+                        return 1
                 else:
-                    storage.file_store(file_name, r.content)
-                return 0
-        return 1
+                    return 2
+            else:
+                logging.error(f"Not Found: {url}")
+        except requests.exceptions.ReadTimeout:
+            logging.warning(f"TimeOut: {url}")
+        except Exception as e:
+            logging.warning(e)
+        return -1
 
-def check_document(headers):
+def get_file_type(headers):
     #TODO check other options
-    if 'Content-type' not in headers or headers['Content-type'].startswith('text/html'):
-        return 2
-    else:
-        return 0
-              
+    doc_type = ''
+    debug = []
+    if 'Content-type' in headers:
+        debug.append(f"Content-type: {headers['Content-type']}")
+        if headers['Content-type'] == 'application/pdf':
+            doc_type='pdf'
+        elif headers['Content-type'].startswith('text/html'):
+            doc_type='html'
+    if 'Content-disposition' in headers:
+        debug.append(f"Content-Disposition: {headers['Content-Disposition']}")
+        for item in headers['Content-disposition'].split(';'):
+            if 'filename' in item:
+                lb, file_name = item.split('=', maxsplit=1)
+                doc_type = os.path.splitext(file_name)[1].replace('.', '').replace('?=', '')
+    print("HEADS",debug, doc_type)
+    return doc_type
     
