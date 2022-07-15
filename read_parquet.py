@@ -50,9 +50,10 @@ def main():
         'nextprocurement', 
         False, 
         config['MONGODB_AUTH'], 
-        credentials=config['MONGODB_CREDENTIALS']
+        credentials=config['MONGODB_CREDENTIALS'],
+        connect_db=True
     )
-    incoming_col = db_lnk.get_collections(['incoming','contratos'])['incoming']
+    incoming_col = db_lnk.db.get_collection('incoming')
 
     data_table = pd.read_parquet(args.pkt_file, use_nullable_dtypes=True)
     new_cols = pd.read_csv(args.codes_file, sep='\t', index_col='ORIGINAL')

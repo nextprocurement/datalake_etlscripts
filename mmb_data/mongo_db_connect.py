@@ -10,7 +10,9 @@ from pymongo.errors import ConnectionFailure
 from gridfs import GridFS
 
 class Mongo_db():
-    def __init__(self, host, db, read_only, auth=True, wconcern=1, credentials = None):
+    def __init__(
+        self, host, db, read_only, 
+        auth=True, wconcern=1, credentials=None, connect_db=True):
         self.credentials = credentials
         self.authDB = 'admin'
         self.host = host
@@ -19,8 +21,9 @@ class Mongo_db():
         self.auth = auth
         self.wconcern = wconcern
         self.uri = self._set_uri()
-
         self.connected = False
+        if connect_db:
+            self.connect_db()
 
     def set_auth(self, user, passw, auth_db):
         if self.read_only:
@@ -62,9 +65,9 @@ class Mongo_db():
         for c in cols:
             dbs[c] = self.db.get_collection(c)
         return dbs
-
+    
     def get_gfs(self, col_name='fs'):
-        return GridFS(self.db, col_name, disable_md5=True)
+        return GridFS(self.db, col_name)
 
     def _db_connect(self):
         if not self.uri:
@@ -75,7 +78,6 @@ class Mongo_db():
                 connectTimeoutMS=500000
             )
             self.db = self.client.get_database(self.db)
-            self.connected = True
         except ConnectionFailure:
             sys.exit("Error connecting DB")
         # test connection
@@ -84,7 +86,7 @@ class Mongo_db():
         except Exception as e:
             logging.error("No response from MongoDB server")
             sys.exit()
-        
+        self.connected = True        
 
     def close(self):
         if self.connected:

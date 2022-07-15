@@ -58,10 +58,10 @@ def main():
         'nextprocurement',
         False,
         config['MONGODB_AUTH'],
-        credentials=config['MONGODB_CREDENTIALS']
+        credentials=config['MONGODB_CREDENTIALS'],
+        connect_db=True
     )
-
-    incoming_col = db_lnk.get_collections(['incoming'])['incoming']
+    incoming_col = db_lnk.db.get_collection('incoming')
 
     if args.verbose:
         logging.info("Connecting to storage...")
