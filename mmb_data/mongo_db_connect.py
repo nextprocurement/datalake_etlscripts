@@ -4,7 +4,7 @@
 ## Defaults to mmb
 
 import sys
-
+import logging
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 from gridfs import GridFS
@@ -78,6 +78,13 @@ class Mongo_db():
             self.connected = True
         except ConnectionFailure:
             sys.exit("Error connecting DB")
+        # test connection
+        try:
+            self.client.server_info()
+        except Exception as e:
+            logging.error("No response from MongoDB server")
+            sys.exit()
+        
 
     def close(self):
         if self.connected:

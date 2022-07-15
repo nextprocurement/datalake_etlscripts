@@ -27,6 +27,9 @@ from mmb_data.mongo_db_connect import Mongo_db
 
 def main():
     ''' Main '''
+
+
+    
     parser = argparse.ArgumentParser(description='Download documents')
     parser.add_argument('--replace', action='store_true', help='Replace existing files')
     parser.add_argument('--ini', action='store', help='Initial document range')
@@ -37,18 +40,17 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
     args = parser.parse_args()
-
-    # Config file
-    with open(args.config, 'r')  as config_file:
-        config = load(config_file, Loader=CLoader)
-
     # Setup logging
     logging.basicConfig(stream=sys.stdout, format='[%(asctime)s] %(levelname)s %(message)s', datefmt='%Y-%m-%d|%H:%M:%S')
     if args.debug:
         logging.getLogger().setLevel(10)
     else:
         logging.getLogger().setLevel(20)
-
+        
+    # Config file
+    with open(args.config, 'r')  as config_file:
+        config = load(config_file, Loader=CLoader)
+    
     logging.info("Connecting to MongoDB")
 
     db_lnk = Mongo_db(
