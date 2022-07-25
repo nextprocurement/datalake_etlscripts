@@ -5,6 +5,7 @@ import numpy as np
 import sys
 import re
 import os.path
+import copy
 from os.path import join as opj
 import logging
 import argparse
@@ -48,7 +49,7 @@ class NtpEntry:
     def load_data(self, ntp_order, data):
         self.ntp_order = ntp_order
         self.set_ntp_id()
-        self.data = data
+        self.data = copy.deepcopy(data)
         self.data['_id'] = self.ntp_id
 
     def set_ntp_id(self):

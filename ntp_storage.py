@@ -1,6 +1,7 @@
 ''' Classes NtoStorage '''
 import sys
 import os.path
+import logging
 from os.path import join as opj
 import swiftclient as sw
 
@@ -70,3 +71,30 @@ class NtpStorageSwift (NtpStorage):
             else:
                 print("Error checking swift storage")            
                 sys.exit()
+
+    def get_folder(self, tmp_dir='/tmp/spark_data', remote_prefix=None):
+        head, files = self.connection.get_container(
+            self.container,
+            prefix=remote_prefix,
+            full_listing=True
+            )
+        ok = 0
+        ko = 0
+        logging.debug(f"{len(files)} found from {remote_prefix}")
+        if not os.path.isdir(tmp_dir):
+            logging.debug(f"Creating {tmp_dir}")
+            os.mkdir(tmp_dir)
+        for file in files:
+            try:
+                headers, data = self.connection.get_object(
+                    self.container,
+                    file['name']
+                )
+                with open(opj(tmp_dir, os.path.basename(file['name'])), "bw") as output_file:
+                    output_file.write(data)
+                ok += 1
+            except Exception as e:
+                logging.error(f"download of {file} failed")
+                ko += 1
+        logging.debug(f"{ok} files downloaded and {ko} failed, using {tmp_dir}")
+        return tmp_dir
