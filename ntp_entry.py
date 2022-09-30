@@ -7,6 +7,7 @@ import re
 import os.path
 import copy
 from os.path import join as opj
+from urllib.parse import urlparse
 import logging
 import argparse
 from mmb_data.mongo_db_connect import Mongo_db
@@ -87,31 +88,37 @@ class NtpEntry:
 
     def get_file_name(self, field, ext):
         return f'{self.ntp_id}_{field}.{ext}'
+    
+    def get_server(self, field):
+        return urlparse(self.data[field]).netloc
 
     def store_document(
             self,
             field,
             storage=None,
-            replace=False
+            replace=False,
+            scan_only=False
             ):
         url = self.data[field]
         try:
             r = requests.head(url, timeout=5)
-            logging.debug(r.headers)
+            logging.debug(r.headers)            
             if r.status_code == 200:
                 doc_type = get_file_type(r.headers)
+                logging.debug(f"DOC_TYPE {doc_type}")
                 if doc_type in ('pdf', 'doc', 'docx', 'zip', '7z', 'xslx'):
                     file_name = self.get_file_name(field, doc_type)
-                    if replace or not storage.file_exists(file_name):
-                        #r = requests.get(url, stream=True)
-                        #storage.file_store(file_name, r.content)
-                        return 0
+                    if not scan_only and (replace or not storage.file_exists(file_name)):
+                        r = requests.get(url, stream=True)
+                        storage.file_store(file_name, r.content)
+                        return doc_type
                     else:
                         return 1
                 else:
                     return 2
             else:
                 logging.error(f"Not Found: {url}")
+                return r.status_code
         except requests.exceptions.ReadTimeout:
             logging.warning(f"TimeOut: {url}")
         except Exception as e:
@@ -133,7 +140,7 @@ def get_file_type(headers):
         for item in headers['Content-disposition'].split(';'):
             if 'filename' in item:
                 lb, file_name = item.split('=', maxsplit=1)
-                doc_type = os.path.splitext(file_name)[1].replace('.', '').replace('?=', '')
-    print("HEADS",debug, doc_type)
+                doc_type = os.path.splitext(file_name)[1].replace('.', '').replace('?=', '').replace('"', '')
+    logging.debug(f"HEADS {debug} {doc_type}")
     return doc_type
     

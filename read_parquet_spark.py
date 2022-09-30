@@ -105,14 +105,18 @@ logging.info(f"Last reference found {id_num}")
 
 spark = SparkSession.builder.master("local")\
     .config('spark.driver.bindAddress','127.0.0.1')\
-    .config('spark.mongodb.write.connection.uri',f'mongodb://localhost:27017/')\
+    .config('spark.mongodb.write.host','localhost')\
     .config('spark.mongodb.database','nextprocurement')\
     .config('spark.mongodb.collection','incoming')\
     .config('spark.mongodb.operationType','insert')\
     .getOrCreate()
 
+if not args.local:
+    logging.info("Downloading spark parquet files...")
+else:
+    logging.info("Reading spark parquet files...")
 df = spark.read.parquet(opj(spark_dir,'*'))
-logging.info(f"found {df.count()} document from spark dataset")
+logging.info(f"found {df.count()} documents from spark dataset")
 
 w = Window().orderBy(lit('A'))
 df = df.withColumn("_id", row_number().over(w) + id_num)
