@@ -26,6 +26,9 @@ def main():
     parser = argparse.ArgumentParser(description='Parse NextProcurement parquets')
     parser.add_argument('--drop', action='store_true', help="Clean MongoDB collection")
     parser.add_argument('--config', action='store', help="Configuration file", default="secrets.yml")
+    parser.add_argument('--debug', action='store_true', help="Add Debug information")
+    parser.add_argument('-v','--verbose', action='store_true', help="Add Extra information")
+
     parser.add_argument('codes_file', help="Columns sanitized names")
     parser.add_argument('pkt_file', help="Parquet file")
     args = parser.parse_args()
@@ -69,8 +72,8 @@ def main():
         id_num = ntp.parse_ntp_id(list(max_id_c)[0]['value'])
 
     logging.info(f"Last reference found {id_num}")
-
-    for i in data_table.index:
+    print(args)
+    for i in range(len(data_table.index)):
         data_row = data_table.iloc[i].to_dict().copy()
         id_num += 1
         new_data = ntp.NtpEntry()
