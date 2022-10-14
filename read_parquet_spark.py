@@ -109,6 +109,7 @@ spark = SparkSession.builder.master("local")\
     .config('spark.mongodb.database','nextprocurement')\
     .config('spark.mongodb.collection','incoming')\
     .config('spark.mongodb.operationType','insert')\
+    .config("spark.mongodb.input.sampleSize", 640000)\
     .getOrCreate()
 
 df = spark.read.parquet(opj(spark_dir,'*'))
@@ -123,9 +124,8 @@ def load_data_to_db(row):
     new_data.load_data(data['id_num'], data)
     with open("ddd.json", "a") as json_file:
         json_file.write(json.dumps(data))
-    #new_data.commit_to_db(incoming_col)
 
-#df.foreach(load_data_to_db)
+
+df.printSchema()
 df.write.format("mongodb").mode("append").save()
-
 logging.info(f"Completed {id_num} documents")
