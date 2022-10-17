@@ -143,10 +143,12 @@ def get_file_type(headers):
             doc_type='html'
     if 'Content-disposition' in headers:
         debug.append(f"Content-Disposition: {headers['Content-Disposition']}")
+        headers['Content-disposition'] = headers['Content-disposition'].replace('769;','_').replace('8230;','_')
         for item in headers['Content-disposition'].split(';'):
             if 'filename' in item:
                 lb, file_name = item.split('=', maxsplit=1)
-                file_name.replace(' .', '.').replace(';','_')
+                file_name = file_name.replace(' .', '.').lower()
+                logging.debug(file_name)
                 doc_type = os.path.splitext(file_name)[1].replace('.', '').replace('?=', '').replace('"', '')
     logging.debug(f"HEADS {debug} {doc_type}")
     return doc_type
