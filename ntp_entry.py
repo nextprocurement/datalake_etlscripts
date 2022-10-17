@@ -112,7 +112,10 @@ class NtpEntry:
             logging.debug(r.headers)            
             if r.status_code == 200:
                 doc_type = get_file_type(r.headers)
-                logging.debug(f"DOC_TYPE {doc_type}")
+                if doc_type:
+                    logging.debug(f"DOC_TYPE {doc_type}")
+                else:
+                    logging.debug(f"EMPTY DOC TYPE at {self.ntp_id}")
                 if doc_type in ACCEPTED_DOC_TYPES:
                     file_name = self.get_file_name(field, doc_type)
                     if not scan_only and (replace or not storage.file_exists(file_name)):
