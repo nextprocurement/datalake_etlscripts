@@ -12,6 +12,13 @@ import logging
 import argparse
 from mmb_data.mongo_db_connect import Mongo_db
 
+ACCEPTED_DOC_TYPES = (
+    '7z', 'doc', 'docx', 'pdf', 
+    'tcq', 'dwg', 'odg', 'odt', 
+    'rar', 'rtf', 'tcq', 'txt', 
+    'xls', 'xlsm', 'xlsx', 'zip'
+)
+
 def parse_ntp_id(ntp_id):
     ''' Get document order from ntp_id
         Parameters:
@@ -106,7 +113,7 @@ class NtpEntry:
             if r.status_code == 200:
                 doc_type = get_file_type(r.headers)
                 logging.debug(f"DOC_TYPE {doc_type}")
-                if doc_type in ('pdf', 'doc', 'docx', 'zip', '7z', 'xslx'):
+                if doc_type in ACCEPTED_DOC_TYPES:
                     file_name = self.get_file_name(field, doc_type)
                     if not scan_only and (replace or not storage.file_exists(file_name)):
                         r = requests.get(url, stream=True)
