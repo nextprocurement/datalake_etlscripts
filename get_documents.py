@@ -16,6 +16,10 @@
                              Selected storage (disk|gridfs|swift). Default:disk
        --folder              Disk folder
        --config              Configuration file. Default:secrets.yml
+       --debug
+       -v --verbose
+       --scan_only           Scan for presence and detect file type, do not download
+       --delay               Add a time delay between calls to the same server
 '''
 import sys
 import argparse
@@ -31,20 +35,20 @@ from mmb_data.mongo_db_connect import Mongo_db
 def main():
     ''' Main '''
 
-
-    
     parser = argparse.ArgumentParser(description='Download documents')
     parser.add_argument('--replace', action='store_true', help='Replace existing files')
     parser.add_argument('--ini', action='store', help='Initial document range')
     parser.add_argument('--fin', action='store', help='Final document range')
     parser.add_argument('--id', action='store', help='Selected document id')
     parser.add_argument('--where', action='store', default='disk', choices=['disk', 'gridfs', 'swift'], help='Selected storage (disk|gridfs|swift)')
-    parser.add_argument('--folder', action='store', help='Selected Disk folder')
+    parser.add_argument('--folder', action='store', help='Selected Disk/Swift folder')
     parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
-    parser.add_argument('--scan_only', action='store_true', help = 'Scan URL for doc type, do not download (implies --debug)')
+    parser.add_argument('--scan_only', action='store_true', help='Scan URL for doc type, do not download (implies --debug)')
     parser.add_argument('--delay', action='store', default=0, type=int, help="Time delay between requests to same server")
+    parser.add_argument('--container', action='store_true', help="Swift container to use", default='ESPROC')
+
     args = parser.parse_args()
     # Setup logging
     logging.basicConfig(stream=sys.stdout, format='[%(asctime)s] %(levelname)s %(message)s', datefmt='%Y-%m-%d|%H:%M:%S')
@@ -52,7 +56,7 @@ def main():
         logging.getLogger().setLevel(10)
     else:
         logging.getLogger().setLevel(20)
-        
+
     # Config file
     with open(args.config, 'r')  as config_file:
         config = load(config_file, Loader=CLoader)
@@ -68,29 +72,33 @@ def main():
         connect_db=True
     )
     incoming_col = db_lnk.db.get_collection('incoming')
-    
+
     if not args.scan_only:
         if args.verbose:
             logging.info("Connecting to storage...")
-        
+
         if args.where == 'disk':
-            if args.folder is not None:
-                if not os.path.isdir(args.folder):
-                    try:
-                        os.mkdir((args.folder))
-                    except:
-                        sys.exit("Error creating {args.folder}")
-                    logging.info(f"{args.folder} non existent, created")
-                storage = ntpst.NtpStorageDisk(data_dir=args.folder)    
-                logging.info(f"Using disk storage at {args.folder}")
+            if args.folder is None:
+                data_folder = config['TMPDIR']
             else:
-                storage = ntpst.NtpStorageDisk(data_dir=config['TMPDIR'])
-                logging.info(f"Using disk storage at {config['TMPDIR']}")
+                data_folder = args.folder
+
+            if not os.path.isdir(data_folder):
+                try:
+                    os.mkdir((args.folder))
+                except:
+                    sys.exit("Error creating {data_folder}")
+                logging.info(f"{data_folder} non existent, created")
+
+            storage = ntpst.NtpStorageDisk(data_dir=data_folder)
+            logging.info(f"Using disk storage at {data_folder}")
+
         elif args.where == 'gridfs':
-            logging.info(f"Using GridFS storage")
+            logging.info("Using GridFS storage")
             storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
+
         elif args.where == 'swift':
-            logging.info(f"Using Swift storage")
+            logging.info("Using Swift storage")
             swift_conn = sw.Connection(
                 authurl=config['OS_AUTH_URL'],
                 auth_version=3,
@@ -104,8 +112,8 @@ def main():
             )
             storage = ntpst.NtpStorageSwift(
                 swift_connection=swift_conn,
-                swift_container='nextp-data',
-                swift_prefix='/data'
+                swift_container=args.container,
+                swift_prefix='documents'
             )
     else:
         args.debug = True
@@ -128,7 +136,7 @@ def main():
         if args.fin is not None:
             query.append({'_id':{'$lte': args.fin}})
         query = {'$and': query}
-    
+
     num_ids = 0
     last_server = ''
     for doc in list(incoming_col.find(query, {'_id':1})):
@@ -145,7 +153,7 @@ def main():
                 time.sleep(args.delay)
             else:
                 last_server = ntp_doc.get_server(url_field)
-            print(f"{last_server}")
+            #print(f"{last_server}")
             results = ntp_doc.store_document(url_field, replace=args.replace, storage=storage, scan_only=args.scan_only)
             if args.verbose:
                 if results == 1:

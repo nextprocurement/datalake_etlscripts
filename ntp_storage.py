@@ -5,8 +5,6 @@ import logging
 from os.path import join as opj
 import swiftclient as sw
 
-# from mmb_data.mongo_db_connect import Mongo_db
-
 class NtpStorage:
     ''' Abstract class to manage alternative storages'''
     def __init__(self, type_store):
@@ -60,17 +58,16 @@ class NtpStorageSwift (NtpStorage):
     def file_exists(self, file_name):
         try:
             resp_headers = self.connection.head_object(
-                self.container, 
+                self.container,
                 opj(self.data_prefix, file_name)
             )
             return True
-        except sw.ClientException as e:            
-            print(e.http_status)
+        except sw.ClientException as e:
+            logging.debug(e.http_status)
             if e.http_status == 404:
                 return False
-            else:
-                print("Error checking swift storage")            
-                sys.exit()
+            logging.error("Error connecting swift storage")
+            sys.exit()
 
     def get_folder(self, tmp_dir='/tmp/spark_data', remote_prefix=None):
         head, files = self.connection.get_container(
@@ -94,6 +91,7 @@ class NtpStorageSwift (NtpStorage):
                     output_file.write(data)
                 ok += 1
             except Exception as e:
+                logging.debug(e)
                 logging.error(f"download of {file} failed")
                 ko += 1
         logging.debug(f"{ok} files downloaded and {ko} failed, using {tmp_dir}")

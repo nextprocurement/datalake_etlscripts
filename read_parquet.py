@@ -21,7 +21,9 @@ def main():
     # optional arguments:
     #   -h, --help  show this help message and exit
     #   --drop      Clean MongoDB collection
-    #   --config    Configuration file (default:secrets.yml)    
+    #   --config    Configuration file (default:secrets.yml)
+    #   --debug     Add Debug information from different components
+    #   -v --verbose Add additional information
 
     parser = argparse.ArgumentParser(description='Parse NextProcurement parquets')
     parser.add_argument('--drop', action='store_true', help="Clean MongoDB collection")
@@ -42,17 +44,17 @@ def main():
     # Config file
     with open(args.config)  as config_file:
         config = load(config_file, Loader=CLoader)
-    
+
     logging.info(f"Configuration: {args.config}")
     logging.info(f"Parquet:       {args.pkt_file}")
     logging.info(f"Codes:         {args.codes_file}")
-    
+
     logging.info("Connecting MongoDB")
     db_lnk = Mongo_db(
-        config['MONGODB_HOST'], 
-        'nextprocurement', 
-        False, 
-        config['MONGODB_AUTH'], 
+        config['MONGODB_HOST'],
+        'nextprocurement',
+        False,
+        config['MONGODB_AUTH'],
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
@@ -72,7 +74,7 @@ def main():
         id_num = ntp.parse_ntp_id(list(max_id_c)[0]['value'])
 
     logging.info(f"Last reference found {id_num}")
-    print(args)
+    #print(args)
     for i in range(len(data_table.index)):
         data_row = data_table.iloc[i].to_dict().copy()
         id_num += 1
@@ -84,4 +86,4 @@ def main():
     logging.info(f"Completed {id_num} documents")
 
 if __name__ == "__main__":
-    main()    
+    main()

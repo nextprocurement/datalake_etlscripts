@@ -1,21 +1,18 @@
-''' Classes NtoStorage and NtpEntry '''
-import pandas as pd
-import requests
-import numpy as np
+''' Classes NtpEntry '''
 import sys
 import re
-import os.path
 import copy
-from os.path import join as opj
-from urllib.parse import urlparse
+import os.path
 import logging
-import argparse
-from mmb_data.mongo_db_connect import Mongo_db
+import requests
+import numpy as np
+from urllib.parse import urlparse
+import pandas as pd
 
 ACCEPTED_DOC_TYPES = (
-    '7z', 'doc', 'docx', 'pdf', 
-    'tcq', 'dwg', 'odg', 'odt', 
-    'rar', 'rtf', 'tcq', 'txt', 
+    '7z', 'doc', 'docx', 'pdf',
+    'tcq', 'dwg', 'odg', 'odt',
+    'rar', 'rtf', 'tcq', 'txt',
     'xls', 'xlsm', 'xlsx', 'zip'
 )
 
@@ -95,7 +92,7 @@ class NtpEntry:
 
     def get_file_name(self, field, ext):
         return f'{self.ntp_id}_{field}.{ext}'
-    
+
     def get_server(self, field):
         return urlparse(self.data[field]).netloc
 
@@ -109,7 +106,7 @@ class NtpEntry:
         url = self.data[field]
         try:
             r = requests.head(url, timeout=5)
-            logging.debug(r.headers)            
+            logging.debug(r.headers)
             if r.status_code == 200:
                 doc_type = get_file_type(r.headers)
                 if doc_type:
@@ -119,16 +116,13 @@ class NtpEntry:
                 if doc_type in ACCEPTED_DOC_TYPES:
                     file_name = self.get_file_name(field, doc_type)
                     if not scan_only and (replace or not storage.file_exists(file_name)):
-                        r = requests.get(url, stream=True)
-                        storage.file_store(file_name, r.content)
+                        res = requests.get(url, stream=True)
+                        storage.file_store(file_name, res.content)
                         return doc_type
-                    else:
-                        return 1
-                else:
-                    return 2
-            else:
-                logging.error(f"Not Found: {url}")
-                return r.status_code
+                    return 1
+                return 2
+            logging.error(f"Not Found: {url}")
+            return res.status_code
         except requests.exceptions.ReadTimeout:
             logging.warning(f"TimeOut: {url}")
         except Exception as e:
@@ -155,4 +149,3 @@ def get_file_type(headers):
                 doc_type = os.path.splitext(file_name)[1].replace('.', '').replace('?=', '').replace('"', '')
     logging.debug(f"HEADS {debug} {doc_type}")
     return doc_type
-    
