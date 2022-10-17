@@ -133,7 +133,6 @@ class NtpEntry:
         return -1
 
 def get_file_type(headers):
-    #TODO check other options
     doc_type = ''
     debug = []
     if 'Content-type' in headers:
@@ -147,6 +146,7 @@ def get_file_type(headers):
         for item in headers['Content-disposition'].split(';'):
             if 'filename' in item:
                 lb, file_name = item.split('=', maxsplit=1)
+                file_name.replace(' .', '.').replace(';','_')
                 doc_type = os.path.splitext(file_name)[1].replace('.', '').replace('?=', '').replace('"', '')
     logging.debug(f"HEADS {debug} {doc_type}")
     return doc_type
