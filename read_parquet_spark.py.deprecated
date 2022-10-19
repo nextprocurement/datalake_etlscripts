@@ -112,7 +112,7 @@ spark = SparkSession.builder.master("local")\
     .config('spark.driver.bindAddress','127.0.0.1')\
     .config('spark.mongodb.write.host','localhost')\
     .config('spark.mongodb.database','nextprocurement')\
-    .config('spark.mongodb.collection','incoming')\
+    .config('spark.mongodb.collection','incoming-ted')\
     .config('spark.mongodb.operationType','insert')\
     .config("spark.mongodb.input.sampleSize", 640000)\
     .getOrCreate()
@@ -134,7 +134,10 @@ def load_data_to_db(row):
     with open("ddd.json", "a") as json_file:
         json_file.write(json.dumps(data))
 
-
 df.printSchema()
-df.write.format("mongodb").mode("append").save()
-logging.info(f"Completed {id_num} documents")
+pd_df = df.toPandas()
+#for row in df.rdd.collect():
+#    print(row)
+#    sys.exit()
+#df.write.format("mongodb").mode("append").save()
+#logging.info(f"Completed {id_num} documents")
