@@ -11,9 +11,11 @@ def is_in_range(ntp_id, id_range):
     if isinstance(id_range, str):
         return id_range == ntp_id
     id_min, id_max = id_range
-    return id_min is None and ntp_id <= id_max or\
-        id_max is None and ntp_id >= id_min or\
-        id_min <= ntp_id <= id_max
+    if id_min is None:
+        return ntp_id <= id_max
+    if id_max is None:
+        return ntp_id >= id_min
+    return id_min <= ntp_id <= id_max
 
 def get_ntpid(file):
     if '_' not in file:
@@ -49,13 +51,20 @@ class NtpStorageDisk (NtpStorage):
             logging.error(f"Reading file {opj(self.data_dir, file_name)} failed")
         return ''
 
+    def delete_file(self, file_name):
+        try:
+            os.remove({opj(self.data_dir, file_name)})
+        except Exception as e:
+            logging.debug(e)
+            logging.error(f"Error deleting {opj(self.data_dir, file_name)}")
+
     def file_exists(self, file_name):
         return os.path.exists(opj(self.data_dir, file_name))
 
     def file_list(self, id_range=None):
         file_list = []
         for file in os.listdir(self.data_dir):
-            if id_range is None or is_in_range(get_ntpid(file['name'], id_range)):
+            if id_range is None or is_in_range(get_ntpid(file), id_range):
                 file_list.append(file)
         return file_list
 
@@ -67,9 +76,7 @@ class NtpStorageGridFs (NtpStorage):
 
     def file_store(self, file_name, contents):
         #removing previous version if exists
-        if self.file_exists(file_name):
-            file_id = self.gridfs.find_one({'filename':file_name})._id
-            self.gridfs.delete(file_id)
+        self.delete_file(file_name)
         self.gridfs.put(contents, filename=file_name)
 
     def file_read(self, file_name):
@@ -80,13 +87,18 @@ class NtpStorageGridFs (NtpStorage):
             logging.error(f"File {file_name} not found")
         return ''
 
+    def delete_file(self, file_name):
+        if self.file_exists(file_name):
+            file_id = self.gridfs.find_one({'filename':file_name})._id
+            self.gridfs.delete(file_id)
+
     def file_exists(self, file_name):
         return self.gridfs.exists(filename=file_name)
 
     def file_list(self, id_range=None):
         list = []
         for file in self.gridfs.list():
-            if id_range is None or is_in_range(get_ntpid(file['name'], id_range)):
+            if id_range is None or is_in_range(get_ntpid(file), id_range):
                 list.append(file)
         return list
 
@@ -120,7 +132,7 @@ class NtpStorageSwift (NtpStorage):
             logging.error("Error connecting swift storage")
             sys.exit()
 
-    def get_folder(self, tmp_dir='/tmp/spark_data', remote_prefix=None):
+    def get_folder(self, tmp_dir='/tmp', remote_prefix=None):
         head, files = self.connection.get_container(
             self.container,
             prefix=remote_prefix,
@@ -145,7 +157,7 @@ class NtpStorageSwift (NtpStorage):
         try:
             headers, data = self.connection.get_object(
                 self.container,
-                file_name
+                opj(self.data_prefix, file_name)
             )
             return data
         except Exception as e:
@@ -165,6 +177,17 @@ class NtpStorageSwift (NtpStorage):
             logging.error(f"download of {file_name} failed")
         return ok
 
+    def delete_file(self, file_name):
+        try:
+            headers, data = self.connection.delete_object(
+                self.container,
+                file_name
+            )
+        except Exception as e:
+            logging.debug(e)
+            logging.error(f"deletion of {file_name} failed")
+        return 0
+
     def file_list(self, id_range=None):
         head, files = self.connection.get_container(
             self.container,
@@ -174,6 +197,6 @@ class NtpStorageSwift (NtpStorage):
         for file in files:
             if not file['name'].startswith(self.data_prefix):
                 continue
-            if '_' in file['name'] and (id_range is None or is_in_range(get_ntpid(file['name'], id_range))):
+            if '_' in file['name'] and (id_range is None or is_in_range(get_ntpid(os.path.basename(file['name'])), id_range)):
                 list.append(os.path.basename(file['name']))
         return list

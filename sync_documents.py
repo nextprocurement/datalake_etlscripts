@@ -8,9 +8,9 @@
     optional arguments:
        -h, --help            show this help message and exit
        -v, --verbose         Add extra progress information
-       -i --folder_in        Origin folder as container@storage:folder  
+       -i --folder_in        Origin folder as container@storage:folder
        -o --folder_out       Destination folder as container@storage:folder
-       --do_not_replace      Do not replace existing files at Destination
+       --replace             Replace existing files at Destination
        --delete              Delete files on Destination absent at Origin
        --ini INI             Initial document range
        --fin FIN             Final document range
@@ -66,7 +66,7 @@ def main():
     parser.add_argument('-o', '--folder_out', action='store', help='Selected Destination (local folder|gridfs:|container@swift:folder)')
     parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
     parser.add_argument('--delete',action='store_true', help='Delete files at destination that are not present at Origin')
-    parser.add_argument('--do_not_replace', action='store_true', help='Do Not Replace existing files')
+    parser.add_argument('--replace', action='store_true', help='Replace existing files')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
 
@@ -82,7 +82,8 @@ def main():
     with open(args.config, 'r')  as config_file:
         config = load(config_file, Loader=CLoader)
 
-    logging.info("Connecting to MongoDB")
+    if args.verbose:
+        logging.info("Connecting to MongoDB")
 
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
@@ -100,6 +101,8 @@ def main():
     where_from, from_folder, container_from = parse_folder_str(args.folder_in)
     where_to, to_folder, container_to = parse_folder_str(args.folder_out)
 
+    log_message_i = log_message_o = ''
+
     if where_from == 'disk' or where_to == 'disk':
         if where_from == 'disk':
             if from_folder is None:
@@ -110,37 +113,35 @@ def main():
                 logging.error(f"{from_folder} does not exist, exiting")
                 sys.exit(1)
             from_storage = ntpst.NtpStorageDisk(data_dir=from_folder)
-            logging.info(f"Using Origin disk storage at {from_folder}")
+            log_message_i = f"Using Origin disk storage at {from_folder}"
 
         if where_to == 'disk':
             if to_folder is None:
                 to_folder = config['TMPDIR']
-            else:
-                to_folder = args.to_folder
 
             if to_folder == from_folder:
                 logging.error("Origin and Destination folders are the same, exiting")
                 sys.exit()
 
-            logging.info(f"Using Destination disk storage at {to_folder}")
+            log_message_o = f"Using Destination disk storage at {to_folder}"
             if not os.path.isdir(to_folder):
                 try:
                     os.mkdir(to_folder)
                     logging.info(f"{to_folder} non existent, created")
                 except:
-                    sys.exit("Error creating {to_folder}")
+                    sys.exit(f"Error creating {to_folder}")
             to_storage = ntpst.NtpStorageDisk(data_dir=to_folder)
 
     if where_from == 'gridfs' or where_to == 'gridfs':
         if where_from == where_to:
-            logging.erro("Origin and destination points to gridFS, exiting")
+            logging.error("Origin and destination points to gridFS, exiting")
             sys.error(1)
         if where_from == 'gridfs':
-            logging.info("Using Origin GridFS storage")
+            log_message_i = "Using Origin GridFS storage"
             from_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
             from_folder = 'downloadedDocuments'
         if where_to == 'gridfs':
-            logging.info("Using Destination GridFS storage")
+            log_message_o = "Using Destination GridFS storage"
             to_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
             to_folder = 'downloadedDocuments'
 
@@ -168,9 +169,9 @@ def main():
                 swift_container=container_from,
                 swift_prefix=from_folder
             )
-            logging.info(f"Using Origin Swift storage at {container_from}:{from_folder}")
+            log_message_i = f"Using Origin Swift storage at {container_from}:{from_folder}"
 
-        if args.where_to == 'swift':
+        if where_to == 'swift':
             if to_folder is None:
                 to_folder = 'documentos'
             to_storage = ntpst.NtpStorageSwift(
@@ -178,9 +179,11 @@ def main():
                 swift_container=container_to,
                 swift_prefix=to_folder
             )
-            logging.info(f"Using Destination Swift storage at {container_to}:{to_folder}")
+            log_message_o = f"Using Destination Swift storage at {container_to}:{to_folder}"
 
     if args.verbose:
+        logging.info(log_message_i)
+        logging.info(log_message_o)
         logging.info("Getting ids...")
 
     for ntp_id in (args.id, args.ini, args.fin):
@@ -198,32 +201,63 @@ def main():
             query.append({'_id':{'$lte': args.fin}})
         query = {'$and': query}
 
-    print(get_id_range(args))
-    from_files = from_storage.file_list(id_range=get_id_range(args))
-    print(from_files[0:10])
+    if args.verbose:
+        logging.info(f"id_range: {get_id_range(args)}")
 
-    to_files = to_storage.file_list(id_range=get_id_range(args))
-    print(to_files[0:10])
+    from_files = set(from_storage.file_list(id_range=get_id_range(args)))
 
-    print(f"Origin: Files available at {args.from_where}:{args.from_folder} {len(from_files)}")
-    print(f"Destination: Files available at {args.to_where}:{args.to_folder} {len(to_files)}")
+    to_files = set(to_storage.file_list(id_range=get_id_range(args)))
 
-    to_transfer = []
+    logging.info(f"Origin: {len(from_files)} Files available at {args.folder_in} ")
+    logging.info(f"Destination: {len(to_files)} Files available at {args.folder_out} ")
+
+    new_files = []
+    exist_files = []
     for file in from_files:
         if file not in to_files:
-            to_transfer.append(file)
-    print(f"{len(to_transfer)} files to transfer")
+            new_files.append(file)
+        else:
+            exist_files.append(file)
+
+    logging.info(f"{len(new_files)} new files at Origin")
+    if args.replace:
+        logging.info(f"{len(exist_files)} existing files at Destination")
+
     if args.delete:
         to_delete = []
         for file in to_files:
             if file not in from_files:
                 to_delete.append(file)
-        print(f"{len(to_delete)} files to delete")
-
-
-
+        logging.info(f"{len(to_delete)} files to delete at Destination")
 
     if args.verbose:
-        logging.info(f"Processed {num_ids} entries")
+        logging.info(f"Starting transfer")
+
+    n_delete = 0
+    n_transfer = 0
+
+    if args.delete:
+        for file in to_delete:
+            try:
+                to_storage.delete_file(file)
+                n_delete += 1
+            except Exception as e:
+                logging.debug(e)
+                logging.error(f"Error deleting {file}")
+
+    if args.replace:
+        to_transfer = from_files
+    else:
+        to_transfer = new_files
+
+    for file in to_transfer:
+        try:
+            to_storage.file_store(file, from_storage.file_read(file))
+            n_transfer += 1
+        except Exception as e:
+            logging.debug(e)
+            logging.error(f"Error storing {file}")
+    logging.info(f"Transfer completed. {n_transfer} files transferred, {n_delete} files deleted")
+
 if __name__ == "__main__":
     main()
