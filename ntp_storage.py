@@ -125,8 +125,8 @@ class NtpStorageSwift (NtpStorage):
                 opj(self.data_prefix, file_name)
             )
             return True
-        except sw.ClientException as e:
-            logging.debug(e.http_status)
+        except sw.ClientException as e:            
+            logging.debug(e)
             if e.http_status == 404:
                 return False
             logging.error("Error connecting swift storage")

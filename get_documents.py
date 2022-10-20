@@ -112,8 +112,8 @@ def main():
             )
             storage = ntpst.NtpStorageSwift(
                 swift_connection=swift_conn,
-                swift_container=args.container,
-                swift_prefix='documents'
+                swift_container='ESPROC',
+                swift_prefix='documentos'
             )
     else:
         args.debug = True
