@@ -8,16 +8,13 @@
     optional arguments:
        -h, --help            show this help message and exit
        -v, --verbose         Add extra progress information
-       --replace             Replace existing files
+       -i --folder_in        Origin folder as container@storage:folder  
+       -o --folder_out       Destination folder as container@storage:folder
+       --do_not_replace      Do not replace existing files at Destination
+       --delete              Delete files on Destination absent at Origin
        --ini INI             Initial document range
        --fin FIN             Final document range
        --id ID               Selected document id
-       --from {disk,gridfs,swift}
-                             Selected storage (disk|gridfs|swift). Default:disk
-       --to {disk,gridfs,swift}
-                             Selected storage (disk|gridfs|swift). Default:disk
-       --from_folder              Disk folder
-       --to_folder              Disk folder
        --config              Configuration file. Default:secrets.yml
        --debug
        -v --verbose
@@ -43,23 +40,35 @@ def get_id_range(args):
         id_range = None
     return id_range
 
+def parse_folder_str(folder):
+    container = None
+    where_folder = None
+    if ':' not in folder:
+        where_from = 'disk'
+        where_folder = folder
+    elif folder == 'gridfs:':
+        where_from = 'gridfs'
+    elif 'swift:' in folder:
+        container, path = folder.split('@', 1)
+        where_from, where_folder = path.split(':', 1)
+    else:
+        logging.error(f"Not recognized folder {folder}")
+    return where_from, where_folder, container
+
 def main():
     ''' Main '''
 
-    parser = argparse.ArgumentParser(description='Download documents')
-    parser.add_argument('--replace', action='store_true', help='Replace existing files')
+    parser = argparse.ArgumentParser(description='Sync documents between storage')
     parser.add_argument('--ini', action='store', help='Initial document range')
     parser.add_argument('--fin', action='store', help='Final document range')
     parser.add_argument('--id', action='store', help='Selected document id')
-    parser.add_argument('--where_from', action='store', default='disk', choices=['disk', 'gridfs', 'swift'], help='Selected Origin storage (disk|gridfs|swift)')
-    parser.add_argument('--where_to', action='store', default='disk', choices=['disk', 'gridfs', 'swift'], help='Selected Destination storage (disk|gridfs|swift)')
-    parser.add_argument('--from_folder', action='store', help='Selected Disk/Swift folder')
-    parser.add_argument('--to_folder', action='store', help='Selected Disk/Swift folder')
+    parser.add_argument('-i', '--folder_in', action='store', help='Selected Origin (local folder|gridfs:|container@swift:folder)')
+    parser.add_argument('-o', '--folder_out', action='store', help='Selected Destination (local folder|gridfs:|container@swift:folder)')
     parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
     parser.add_argument('--delete',action='store_true', help='Delete files at destination that are not present at Origin')
+    parser.add_argument('--do_not_replace', action='store_true', help='Do Not Replace existing files')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
-    parser.add_argument('--container', action='store_true', help="Swift container to use", default='ESPROC')
 
     args = parser.parse_args()
     # Setup logging
@@ -88,10 +97,12 @@ def main():
     if args.verbose:
         logging.info("Connecting to storage...")
 
-    if args.where_from == 'disk' or args.where_to == 'disk':
-        to_folder = from_folder = ''
-        if args.where_from == 'disk':
-            if args.from_folder is None:
+    where_from, from_folder, container_from = parse_folder_str(args.folder_in)
+    where_to, to_folder, container_to = parse_folder_str(args.folder_out)
+
+    if where_from == 'disk' or where_to == 'disk':
+        if where_from == 'disk':
+            if from_folder is None:
                 from_folder = config['TMPDIR']
             else:
                 from_folder = args.from_folder
@@ -101,8 +112,8 @@ def main():
             from_storage = ntpst.NtpStorageDisk(data_dir=from_folder)
             logging.info(f"Using Origin disk storage at {from_folder}")
 
-        if args.where_to == 'disk':
-            if args.to_folder is None:
+        if where_to == 'disk':
+            if to_folder is None:
                 to_folder = config['TMPDIR']
             else:
                 to_folder = args.to_folder
@@ -120,21 +131,21 @@ def main():
                     sys.exit("Error creating {to_folder}")
             to_storage = ntpst.NtpStorageDisk(data_dir=to_folder)
 
-    if args.where_from == 'gridfs' or args.where_to == 'gridfs':
-        if args.where_from == args.where_to:
+    if where_from == 'gridfs' or where_to == 'gridfs':
+        if where_from == where_to:
             logging.erro("Origin and destination points to gridFS, exiting")
             sys.error(1)
-        if args.where_from == 'gridfs':
+        if where_from == 'gridfs':
             logging.info("Using Origin GridFS storage")
             from_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
             from_folder = 'downloadedDocuments'
-        if args.where_to == 'gridfs':
+        if where_to == 'gridfs':
             logging.info("Using Destination GridFS storage")
             to_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
             to_folder = 'downloadedDocuments'
 
-    if args.where_from == 'swift' or args.where_to == 'swift':
-        if args.where_from == args.where_to and args.from_folder == args.to_folder:
+    if where_from == 'swift' or where_to == 'swift':
+        if where_from == where_to and from_folder == to_folder:
             logging.error("Origin and destination to Swift coincident, exiting")
             sys.error(1)
 
@@ -149,25 +160,25 @@ def main():
                 'service_project_name': 'bsc22NextProcurement'
             }
         )
-        if args.where_from == 'swift':
-            if args.from_folder is None:
-                args.from_folder = 'documentos'
+        if where_from == 'swift':
+            if from_folder is None:
+                from_folder = 'documentos'
             from_storage = ntpst.NtpStorageSwift(
                 swift_connection=swift_conn,
-                swift_container=args.container,
-                swift_prefix=args.from_folder
+                swift_container=container_from,
+                swift_prefix=from_folder
             )
-            logging.info(f"Using Origin Swift storage at {args.container}:{args.from_folder}")
+            logging.info(f"Using Origin Swift storage at {container_from}:{from_folder}")
 
         if args.where_to == 'swift':
-            if args.to_folder is None:
-                args.to_folder = 'documentos'
+            if to_folder is None:
+                to_folder = 'documentos'
             to_storage = ntpst.NtpStorageSwift(
                 swift_connection=swift_conn,
-                swift_container=args.container,
-                swift_prefix=args.args.to_folder
+                swift_container=container_to,
+                swift_prefix=to_folder
             )
-            logging.info(f"Using Destination Swift storage at {args.container}:{args.to_folder}")
+            logging.info(f"Using Destination Swift storage at {container_to}:{to_folder}")
 
     if args.verbose:
         logging.info("Getting ids...")
