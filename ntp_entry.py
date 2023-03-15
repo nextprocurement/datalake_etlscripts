@@ -122,7 +122,7 @@ class NtpEntry:
                     return 1
                 return 2
             logging.error(f"Not Found: {url}")
-            return res.status_code
+            return r.status_code
         except requests.exceptions.ReadTimeout:
             logging.warning(f"TimeOut: {url}")
         except Exception as e:

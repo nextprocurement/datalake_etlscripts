@@ -47,7 +47,7 @@ def main():
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
     parser.add_argument('--scan_only', action='store_true', help='Scan URL for doc type, do not download (implies --debug)')
     parser.add_argument('--delay', action='store', default=0, type=int, help="Time delay between requests to same server")
-    parser.add_argument('--container', action='store_true', help="Swift container to use", default='ESPROC')
+    parser.add_argument('--container', action='store_true', help="Swift container to use", default='PLACE')
 
     args = parser.parse_args()
     # Setup logging
@@ -112,7 +112,7 @@ def main():
             )
             storage = ntpst.NtpStorageSwift(
                 swift_connection=swift_conn,
-                swift_container='ESPROC',
+                swift_container='PLACE',
                 swift_prefix='documentos'
             )
     else:
