@@ -118,16 +118,17 @@ class NtpEntry:
                     if not scan_only and (replace or not storage.file_exists(file_name)):
                         res = requests.get(url, stream=True)
                         storage.file_store(file_name, res.content)
-                        return doc_type
-                    return 1
-                return 2
+                        return r.status_code, doc_type
+                    return 1, doc_type
+                return 2, doc_type
             logging.error(f"Not Found: {url}")
-            return r.status_code
+            return r.status_code, ''
         except requests.exceptions.ReadTimeout:
-            logging.warning(f"TimeOut: {url}")
+            logging.error(f"TimeOut: {url}")
+            return -1, 'Timeout'
         except Exception as e:
-            logging.warning(e)
-        return -1
+            logging.error(e)
+        return -1, 'unknown'
 
 def get_file_type(headers):
     doc_type = ''
