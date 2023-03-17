@@ -6,7 +6,7 @@ import os.path
 import logging
 import requests
 import numpy as np
-from urllib.parse import urlparse,quote
+from urllib.parse import urlparse, unquote
 import pandas as pd
 
 ACCEPTED_DOC_TYPES = (
@@ -17,6 +17,8 @@ ACCEPTED_DOC_TYPES = (
 )
 
 TIMEOUT = 10
+
+REDIRECT_CODES = (301, 302, 303, 307, 308)
 
 def parse_ntp_id(ntp_id):
     ''' Get document order from ntp_id
@@ -106,11 +108,12 @@ class NtpEntry:
             scan_only=False,
             allow_redirects=False
             ):
-        url = self.data[field].replace(' ','%20')
+        url = unquote(self.data[field]).replace(' ','%20').replace('+','')
         try:
             r = requests.head(url, timeout=TIMEOUT, allow_redirects=allow_redirects)
             logging.debug(r.headers)
-            while r.status_code in (301, 302):
+            print(vars(r))
+            while r.status_code in REDIRECT_CODES:
                 url = r.headers['Location']
                 logging.warning(f"Found {r.status_code}: Redirecting to {url}")
                 r = requests.head(url, timeout=TIMEOUT)
