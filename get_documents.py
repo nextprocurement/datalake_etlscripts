@@ -71,7 +71,7 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    incoming_col = db_lnk.db.get_collection('incoming')
+    incoming_col = db_lnk.db.get_collection('place')
 
     if not args.scan_only:
         if args.verbose:

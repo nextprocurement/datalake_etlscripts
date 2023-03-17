@@ -107,6 +107,11 @@ class NtpEntry:
         try:
             r = requests.head(url, timeout=5)
             logging.debug(r.headers)
+            while r.status_code == 301:
+                url = r.headers['Location']
+                logging.debug(f"Found 301: Redirecting to {url}")
+                r = requests.head(url, timeout=5)
+
             if r.status_code == 200:
                 doc_type = get_file_type(r.headers)
                 if doc_type:
