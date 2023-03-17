@@ -147,6 +147,8 @@ def main():
         ntp_doc = ntp.NtpEntry()
         ntp_doc.load_from_db(incoming_col, ntp_id)
         for url_field in ntp_doc.extract_urls():
+            if url_field == 'id':
+                continue
             if args.debug:
                 logging.debug(f"{url_field}: {ntp_doc.data[url_field]}")
             if args.delay and ntp_doc.get_server(url_field) == last_server:
@@ -163,7 +165,7 @@ def main():
                 elif results[0] == 200:
                     logging.info(f"File Stored as {ntp_doc.get_file_name(url_field, results[1])}")
                 else:
-                    logging.warning(f"{url_field} unavailable. Reason:{results[1]}")
+                    logging.warning(f"{url_field} unavailable. Reason: {results[1]}")
     if args.verbose:
         logging.info(f"Processed {num_ids} entries")
 if __name__ == "__main__":

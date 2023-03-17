@@ -109,7 +109,7 @@ class NtpEntry:
             logging.debug(r.headers)
             while r.status_code == 301:
                 url = r.headers['Location']
-                logging.debug(f"Found 301: Redirecting to {url}")
+                logging.warning(f"Found 301: Redirecting to {url}")
                 r = requests.head(url, timeout=5)
 
             if r.status_code == 200:
@@ -127,7 +127,7 @@ class NtpEntry:
                     return 1, doc_type
                 return 2, doc_type
             logging.error(f"Not Found: {url}")
-            return r.status_code, ''
+            return r.status_code, 'Not Found'
         except requests.exceptions.ReadTimeout:
             logging.error(f"TimeOut: {url}")
             return -1, 'Timeout'
