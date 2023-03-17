@@ -156,12 +156,14 @@ def main():
             #print(f"{last_server}")
             results = ntp_doc.store_document(url_field, replace=args.replace, storage=storage, scan_only=args.scan_only)
             if args.verbose:
-                if results == 1:
+                if results[0] == 1:
                     logging.info(f"{url_field} skipped, File already exists and --replace not set or --scan_only")
-                elif results == 2:
-                    logging.info(f"{url_field} skipped, html or empty file")
+                elif results[0] == 2:
+                    logging.info(f"{url_field} skipped, unwanted file type {results[1]}")
+                elif results[0] == 200:
+                    logging.info(f"File Stored as {ntp_doc.get_file_name(url_field, results[1])}")
                 else:
-                    logging.info(f"File Stored as {ntp_doc.get_file_name(url_field, results)}")
+                    logging.warning(f"{url_field} unavailable. Reason:{results[1]}")
     if args.verbose:
         logging.info(f"Processed {num_ids} entries")
 if __name__ == "__main__":
