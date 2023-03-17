@@ -48,6 +48,7 @@ def main():
     parser.add_argument('--scan_only', action='store_true', help='Scan URL for doc type, do not download (implies --debug)')
     parser.add_argument('--delay', action='store', default=0, type=int, help="Time delay between requests to same server")
     parser.add_argument('--container', action='store_true', help="Swift container to use", default='PLACE')
+    parser.add_argument('--allow_redirects', action='store_true', help='Allow for automatic redirects on HTTP 301 302')
 
     args = parser.parse_args()
     # Setup logging
@@ -156,7 +157,13 @@ def main():
             else:
                 last_server = ntp_doc.get_server(url_field)
             #print(f"{last_server}")
-            results = ntp_doc.store_document(url_field, replace=args.replace, storage=storage, scan_only=args.scan_only)
+            results = ntp_doc.store_document(
+                url_field,
+                replace=args.replace,
+                storage=storage,
+                scan_only=args.scan_only,
+                allow_redirects=args.allow_redirects
+            )
             if args.verbose:
                 if results[0] == 1:
                     logging.info(f"{url_field} skipped, File already exists and --replace not set or --scan_only")

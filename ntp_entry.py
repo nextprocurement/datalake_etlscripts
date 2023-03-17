@@ -6,7 +6,7 @@ import os.path
 import logging
 import requests
 import numpy as np
-from urllib.parse import urlparse
+from urllib.parse import urlparse,quote
 import pandas as pd
 
 ACCEPTED_DOC_TYPES = (
@@ -15,6 +15,8 @@ ACCEPTED_DOC_TYPES = (
     'rar', 'rtf', 'tcq', 'txt',
     'xls', 'xlsm', 'xlsx', 'zip'
 )
+
+TIMEOUT = 10
 
 def parse_ntp_id(ntp_id):
     ''' Get document order from ntp_id
@@ -101,16 +103,17 @@ class NtpEntry:
             field,
             storage=None,
             replace=False,
-            scan_only=False
+            scan_only=False,
+            allow_redirects=False
             ):
-        url = self.data[field]
+        url = self.data[field].replace(' ','%20')
         try:
-            r = requests.head(url, timeout=5)
+            r = requests.head(url, timeout=TIMEOUT, allow_redirects=allow_redirects)
             logging.debug(r.headers)
-            while r.status_code == 301:
+            while r.status_code in (301, 302):
                 url = r.headers['Location']
-                logging.warning(f"Found 301: Redirecting to {url}")
-                r = requests.head(url, timeout=5)
+                logging.warning(f"Found {r.status_code}: Redirecting to {url}")
+                r = requests.head(url, timeout=TIMEOUT)
 
             if r.status_code == 200:
                 doc_type = get_file_type(r.headers)
