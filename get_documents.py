@@ -38,7 +38,6 @@ FIELDS_TO_SKIP = [
         'URL_perfil_contratante'
 ]
 
-
 def main():
     ''' Main '''
 
@@ -161,6 +160,7 @@ def main():
         ntp_doc.load_from_db(incoming_col, ntp_id)
         for url_field in ntp_doc.extract_urls():
             if url_field in FIELDS_TO_SKIP:
+                logging.debug(f"Skipping {url_field}")
                 continue
             if args.debug:
                 logging.debug(f"{url_field}: {ntp_doc.data[url_field]}")
