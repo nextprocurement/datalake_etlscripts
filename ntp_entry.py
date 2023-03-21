@@ -141,6 +141,24 @@ class NtpEntry:
             logging.error(e)
         return -1, 'unknown'
 
+    def diff_document(other):
+        new = {}
+        modif = {}
+        miss ={}
+        for k in self.data:
+            if k in other.data and self.data[k] == other.data[k]:
+                continue
+            if k in other.data and self.data[k] != other.data[k]:
+                modif[k] = other.data[k]
+            if k not in other.data:
+                miss[k] = self.data[k]
+        for k in other.data:
+            if k in self.data:
+                continue
+            else:
+                new[k] = other.data[k]
+        return (new, modif, miss)
+
 def get_file_type(headers):
     doc_type = ''
     debug = []

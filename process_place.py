@@ -13,6 +13,17 @@ import ntp_entry as ntp
 import ntp_storage as ntpst
 from mmb_data.mongo_db_connect import Mongo_db
 
+
+def print_stats(lits):
+    stats = {}
+    for l in lits:
+        if len(lits[l]) not in stats:
+            stats[len(lits[l])] = 1
+        else:
+            stats[len(lits[l])] += 1
+    return stats
+
+
 def main():
     ''' Main '''
 
@@ -79,10 +90,21 @@ def main():
             num_place_ids += 1
         else:
             LICS[place_id].append(ntp_id)
+            print(print_stats(LICS))
         num_ids += 1
-        ntp_doc = ntp.NtpEntry()
-        ntp_doc.load_from_db(incoming_col, ntp_id)
     logging.info(f"{num_ids} available, grouped on {num_place_ids} licitations")
+    for place_id in LICS:
+        if len(LICS[place_id]) == 1:
+            continue
+        base_id = LICS[place_id][0]
+        base_doc = ntp.NtpEntry()
+        base_doc.load_from_db(incoming_col, base_id)
+        for id in LICS[place_id]:
+            if id == base_id:
+                continue
+            new_doc = ntp.NtpEntry()
+            new, modif, miss = base_doc.diff_document(new_doc)
+            print(new, modif, miss)
 
 if __name__ == "__main__":
     main()
