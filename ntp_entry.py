@@ -141,17 +141,21 @@ class NtpEntry:
             logging.error(e)
         return -1, 'unknown'
 
-    def diff_document(other):
+    def diff_document(self, other):
         new = {}
         modif = {}
         miss ={}
         for k in self.data:
-            if k in other.data and self.data[k] == other.data[k]:
+            if k == '_id':
                 continue
-            if k in other.data and self.data[k] != other.data[k]:
-                modif[k] = other.data[k]
-            if k not in other.data:
+            if k in other.data:
+                if self.data[k] == other.data[k]:
+                    continue
+                else:
+                    modif[k] = (self.data[k], other.data[k])
+            else:
                 miss[k] = self.data[k]
+
         for k in other.data:
             if k in self.data:
                 continue
