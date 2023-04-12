@@ -79,6 +79,7 @@ class MongoDBBulkWrite():
                             last_id = item['ser_id']
                         elif '_id' in item['id']:
                             last_id = item['id']['_id']
+                    logging.debug(f"Uploading {len(bulk)} mongodb transactions")
                     try:
                         hres = self.collection.bulk_write(bulk, ordered=False)
                     except BulkWriteError as bwe:
