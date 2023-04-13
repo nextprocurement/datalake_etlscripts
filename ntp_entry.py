@@ -6,7 +6,7 @@ import os.path
 import logging
 import requests
 import numpy as np
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 import pandas as pd
 
 ACCEPTED_DOC_TYPES = (
@@ -15,6 +15,10 @@ ACCEPTED_DOC_TYPES = (
     'rar', 'rtf', 'tcq', 'txt',
     'xls', 'xlsm', 'xlsx', 'zip'
 )
+
+TIMEOUT = 10
+
+REDIRECT_CODES = (301, 302, 303, 307, 308)
 
 def parse_ntp_id(ntp_id):
     ''' Get document order from ntp_id
@@ -101,12 +105,19 @@ class NtpEntry:
             field,
             storage=None,
             replace=False,
-            scan_only=False
+            scan_only=False,
+            allow_redirects=False
             ):
-        url = self.data[field]
+        url = unquote(self.data[field]).replace(' ','%20').replace('+','')
         try:
-            r = requests.head(url, timeout=5)
+            r = requests.head(url, timeout=TIMEOUT, allow_redirects=allow_redirects)
             logging.debug(r.headers)
+            print(vars(r))
+            while r.status_code in REDIRECT_CODES:
+                url = r.headers['Location']
+                logging.warning(f"Found {r.status_code}: Redirecting to {url}")
+                r = requests.head(url, timeout=TIMEOUT)
+
             if r.status_code == 200:
                 doc_type = get_file_type(r.headers)
                 if doc_type:
@@ -118,16 +129,17 @@ class NtpEntry:
                     if not scan_only and (replace or not storage.file_exists(file_name)):
                         res = requests.get(url, stream=True)
                         storage.file_store(file_name, res.content)
-                        return doc_type
-                    return 1
-                return 2
+                        return r.status_code, doc_type
+                    return 1, doc_type
+                return 2, doc_type
             logging.error(f"Not Found: {url}")
-            return res.status_code
+            return r.status_code, 'Not Found'
         except requests.exceptions.ReadTimeout:
-            logging.warning(f"TimeOut: {url}")
+            logging.error(f"TimeOut: {url}")
+            return -1, 'Timeout'
         except Exception as e:
-            logging.warning(e)
-        return -1
+            logging.error(e)
+        return -1, 'unknown'
 
 def get_file_type(headers):
     doc_type = ''

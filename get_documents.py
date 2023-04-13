@@ -47,7 +47,8 @@ def main():
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
     parser.add_argument('--scan_only', action='store_true', help='Scan URL for doc type, do not download (implies --debug)')
     parser.add_argument('--delay', action='store', default=0, type=int, help="Time delay between requests to same server")
-    parser.add_argument('--container', action='store_true', help="Swift container to use", default='ESPROC')
+    parser.add_argument('--container', action='store_true', help="Swift container to use", default='PLACE')
+    parser.add_argument('--allow_redirects', action='store_true', help='Allow for automatic redirects on HTTP 301 302')
 
     args = parser.parse_args()
     # Setup logging
@@ -71,7 +72,7 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    incoming_col = db_lnk.db.get_collection('incoming')
+    incoming_col = db_lnk.db.get_collection('place')
 
     if not args.scan_only:
         if args.verbose:
@@ -112,7 +113,7 @@ def main():
             )
             storage = ntpst.NtpStorageSwift(
                 swift_connection=swift_conn,
-                swift_container='ESPROC',
+                swift_container='PLACE',
                 swift_prefix='documentos'
             )
     else:
@@ -147,6 +148,8 @@ def main():
         ntp_doc = ntp.NtpEntry()
         ntp_doc.load_from_db(incoming_col, ntp_id)
         for url_field in ntp_doc.extract_urls():
+            if url_field == 'id':
+                continue
             if args.debug:
                 logging.debug(f"{url_field}: {ntp_doc.data[url_field]}")
             if args.delay and ntp_doc.get_server(url_field) == last_server:
@@ -154,14 +157,22 @@ def main():
             else:
                 last_server = ntp_doc.get_server(url_field)
             #print(f"{last_server}")
-            results = ntp_doc.store_document(url_field, replace=args.replace, storage=storage, scan_only=args.scan_only)
+            results = ntp_doc.store_document(
+                url_field,
+                replace=args.replace,
+                storage=storage,
+                scan_only=args.scan_only,
+                allow_redirects=args.allow_redirects
+            )
             if args.verbose:
-                if results == 1:
+                if results[0] == 1:
                     logging.info(f"{url_field} skipped, File already exists and --replace not set or --scan_only")
-                elif results == 2:
-                    logging.info(f"{url_field} skipped, html or empty file")
+                elif results[0] == 2:
+                    logging.info(f"{url_field} skipped, unwanted file type {results[1]}")
+                elif results[0] == 200:
+                    logging.info(f"File Stored as {ntp_doc.get_file_name(url_field, results[1])}")
                 else:
-                    logging.info(f"File Stored as {ntp_doc.get_file_name(url_field, results)}")
+                    logging.warning(f"{url_field} unavailable. Reason: {results[1]}")
     if args.verbose:
         logging.info(f"Processed {num_ids} entries")
 if __name__ == "__main__":
