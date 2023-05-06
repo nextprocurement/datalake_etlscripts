@@ -112,7 +112,7 @@ class NtpEntry:
         try:
             r = requests.head(url, timeout=TIMEOUT, allow_redirects=allow_redirects)
             logging.debug(r.headers)
-            print(vars(r))
+    #        print(vars(r))
             while r.status_code in REDIRECT_CODES:
                 url = r.headers['Location']
                 logging.warning(f"Found {r.status_code}: Redirecting to {url}")
