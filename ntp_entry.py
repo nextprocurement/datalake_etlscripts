@@ -41,12 +41,27 @@ def parse_parquet(pd_data_row, new_cols):
             new_cols (dict): Dictionary with translated columns names
     '''
     new_data = {}
+    r = False
     for col in pd_data_row:
         if isinstance(pd_data_row[col], np.ndarray):
             pd_data_row[col] = list(pd_data_row[col])
         elif pd.isna(pd_data_row[col]):
             pd_data_row[col] = ''
-        new_data[new_cols.loc[col]['DBFIELD']] = pd_data_row[col]
+
+        try:
+            if new_cols.loc[col]['DBFIELD'] in new_data:
+                r = True
+                if not isinstance(new_data[new_cols.loc[col]['DBFIELD']], list):
+                    new_data[new_cols.loc[col]['DBFIELD']] = [new_data[new_cols.loc[col]['DBFIELD']]]
+                    print(f"WARNING: multiple values found for {new_cols.loc[col]['DBFIELD']}, appending")
+                new_data[new_cols.loc[col]['DBFIELD']].append(pd_data_row[col])
+            else:
+                new_data[new_cols.loc[col]['DBFIELD']] = pd_data_row[col]
+        except KeyError:
+            mod_col = col.replace('ContractFolderStatus - ', '').replace(' - ', '_')
+            print(f'"{col}"\t"{mod_col}"\"string"\n')
+    # if r:
+    #    print(new_data,"\n")
     return new_data
 
 class NtpEntry:
