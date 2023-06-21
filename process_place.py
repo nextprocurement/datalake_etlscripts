@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-''' Script to load PDF documents onto data_lake, takes input data from MongoDB
+''' Script to build historical on place
     usage: process_place.py [-h] [--ini INI] [--fin FIN] [--id ID]
 '''
 import sys
@@ -28,7 +28,6 @@ def main():
     ''' Main '''
 
     parser = argparse.ArgumentParser(description='Download documents')
-    parser.add_argument('--replace', action='store_true', help='Replace existing files')
     parser.add_argument('--ini', action='store', help='Initial document range')
     parser.add_argument('--fin', action='store', help='Final document range')
     parser.add_argument('--id', action='store', help='Selected document id')
@@ -98,14 +97,16 @@ def main():
         patch_col.delete_many({})
 
     logging.info("Start processing")
+    num_ids = 0
+    num_new = 0
+    num_mod = 0
+    num_del = 0
     for place_id in LICS:
+        if args.verbose:
+            print(f"Processing place_id {place_id} with {len(LICS[place_id]) - 1} updates ")
         base_id = sorted(LICS[place_id])[0]
         base_doc = ntp.NtpEntry()
         base_doc.load_from_db(incoming_col, base_id)
-        num_ids = 0
-        num_new = 0
-        num_mod = 0
-        num_del = 0
         for id in LICS[place_id]:
             if id == base_id:
                 continue
@@ -130,7 +131,7 @@ def main():
                 },
                 upsert=True
             )
-    logging.info(f"Processed {num_ids} documents, added {num_new}, modified {num_mod}, deleted {num_del}")
+    logging.info(f"Processed {num_ids} entries, added {num_new}, modified {num_mod}, deleted {num_del}")
 
 if __name__ == "__main__":
     main()
