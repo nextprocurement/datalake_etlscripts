@@ -49,6 +49,7 @@ def main():
     parser.add_argument('--delay', action='store', default=0, type=int, help="Time delay between requests to same server")
     parser.add_argument('--container', action='store_true', help="Swift container to use", default='PLACE')
     parser.add_argument('--allow_redirects', action='store_true', help='Allow for automatic redirects on HTTP 301 302')
+    parser.add_argument('--type', action='store', help='tipo: mayores|menores', default='mayores')
 
     args = parser.parse_args()
     # Setup logging
@@ -72,7 +73,11 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    incoming_col = db_lnk.db.get_collection('place')
+    if args.type=='mayores':
+        incoming_col = db_lnk.db.get_collection('place')
+    else:
+        incoming_col = db_lnk.db.get_collection('place_menores')
+
 
     if not args.scan_only:
         if args.verbose:
