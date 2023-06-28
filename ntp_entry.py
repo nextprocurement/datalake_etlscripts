@@ -8,6 +8,7 @@ import requests
 import numpy as np
 from urllib.parse import urlparse, unquote
 import pandas as pd
+from bs4 import BeautifulSoup
 
 ACCEPTED_DOC_TYPES = (
     '7z', 'doc', 'docx', 'pdf',
@@ -114,6 +115,22 @@ class NtpEntry:
 
     def get_server(self, field):
         return urlparse(self.data[field]).netloc
+    
+    def _check_meta_refresh(self, url):
+        res = requests.get(url, stream=True)
+        soup = BeautifulSoup(res.content, features='lxml')
+        result = soup.find("meta", attrs={"http-equiv":"refresh"})
+        if result:
+             wait, text = result["content"].split(";")
+             if text.strip().lower().startswith("url="):
+                 redir_url=text.strip()[4:].replace("'","")
+                 logging.debug(f"Found meta refresh {redir_url}")
+                 if redir_url.startswith('/'):
+                     parsed_url = urlparse(url)
+                     redir_url = f"{parsed_url.scheme}://{parsed_url.hostname}{redir_url}"
+                 logging.debug(f"New URL found {redir_url}")
+                 return redir_url
+        return ''
 
     def store_document(
             self,
@@ -139,10 +156,19 @@ class NtpEntry:
                     logging.debug(f"DOC_TYPE {doc_type}")
                 else:
                     logging.debug(f"EMPTY DOC TYPE at {self.ntp_id}")
+                if doc_type == 'html':
+                    redir_url = self._check_meta_refresh(url)
+                    if redir_url:
+                        newr = requests.get(redir_url, timeout=TIMEOUT, allow_redirects=allow_redirects)
+                        logging.debug(newr.headers)
+                        if newr.status_code == 200:
+                            doc_type = get_file_type(newr.headers)
+                            logging.debug(f"New doc type {doc_type}")
+                            url = redir_url
                 if doc_type in ACCEPTED_DOC_TYPES:
                     file_name = self.get_file_name(field, doc_type)
                     if not scan_only and (replace or not storage.file_exists(file_name)):
-                        res = requests.get(url, stream=True)
+                        res = requests.get(url, stream=True, allow_redirects=allow_redirects)
                         storage.file_store(file_name, res.content)
                         return r.status_code, doc_type
                     return 1, doc_type
