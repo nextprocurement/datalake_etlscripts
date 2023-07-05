@@ -54,13 +54,13 @@ def parse_parquet(pd_data_row, new_cols):
                 r = True
                 if not isinstance(new_data[new_cols.loc[col]['DBFIELD']], list):
                     new_data[new_cols.loc[col]['DBFIELD']] = [new_data[new_cols.loc[col]['DBFIELD']]]
-                    print(f"WARNING: multiple values found for {new_cols.loc[col]['DBFIELD']}, appending")
+                    logging.debug(f"WARNING: multiple values found for {new_cols.loc[col]['DBFIELD']}, appending")
                 new_data[new_cols.loc[col]['DBFIELD']].append(pd_data_row[col])
             else:
                 new_data[new_cols.loc[col]['DBFIELD']] = pd_data_row[col]
         except KeyError:
             mod_col = col.replace('ContractFolderStatus - ', '').replace(' - ', '_')
-            print(f'"{col}"\t"{mod_col}"\"string"\n')
+            loggin.error(f'"{col}"\t"{mod_col}"\"string"\n')
     # if r:
     #    print(new_data,"\n")
     return new_data
@@ -80,19 +80,33 @@ class NtpEntry:
     def set_ntp_id(self):
         self.ntp_id = 'ntp{:s}'.format(str(self.ntp_order).zfill(8))
 
-    def order_from_id(self, id):
+    def order_from_id(self):
         self.ntp_order = parse_ntp_id(self.ntp_id)
 
-    def commit_to_db(self, col):
+    def commit_to_db(self, col, upsert=False):
+        if upsert:
+            old_doc = col.find_one(
+                {'id': self.data['id'], 'updated': self.data['updated']}
+            )
+            if old_doc['_id']:
+                logging.info(f"Updating previous version {old_doc['_id']}")
+                self.data['_id'] = old_doc['_id']
+                self.ntp_id = old_doc['_id']
+                self.order_from_id()
         try:
-            new_id = col.insert_one(self.data)
+            col.replace_one(
+                {'_id': self.data['_id']},
+                 self.data,
+                 upsert=True
+            )
         except Exception as e:
             logging.debug(self.data)
             for k in self.data:
                 logging.debug(f"{k} {self.data[k]} {type(self.data[k])}")
             logging.error(e)
             sys.exit(1)
-        return new_id
+
+        return self.ntp_order
 
     def load_from_db(self, col_id,  ntp_id):
         try:
@@ -115,7 +129,7 @@ class NtpEntry:
 
     def get_server(self, field):
         return urlparse(self.data[field]).netloc
-    
+
     def _check_meta_refresh(self, url):
         res = requests.get(url, stream=True)
         soup = BeautifulSoup(res.content, features='lxml')
