@@ -138,11 +138,11 @@ def main():
             logging.error("Origin and destination points to gridFS, exiting")
             sys.error(1)
         if where_from == 'gridfs':
-            log_message_i = "Using Origin GridFS storage"
+            log_message_i = f"Using Origin GridFS storage at {config['MONGODB_HOST']}"
             from_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
             from_folder = 'downloadedDocuments'
         if where_to == 'gridfs':
-            log_message_o = "Using Destination GridFS storage"
+            log_message_o = f"Using Destination GridFS storage at {config['MONGODB_HOST']}"
             to_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
             to_folder = 'downloadedDocuments'
 
@@ -241,6 +241,8 @@ def main():
         if args.delete:
             for file in to_delete:
                 try:
+                    if args.verbose:
+                        logging.info(f"Deleting {file}")
                     to_storage.delete_file(file)
                     n_delete += 1
                 except Exception as e:
@@ -254,6 +256,8 @@ def main():
         if not args.check_only:
             for file in to_transfer:
                 try:
+                    if args.verbose:
+                        logging.info(f"Transferring {file}")
                     to_storage.file_store(file, from_storage.file_read(file))
                     n_transfer += 1
                 except Exception as e:
