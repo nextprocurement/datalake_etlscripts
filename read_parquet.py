@@ -96,6 +96,7 @@ def main():
 
     logging.info(f"Last reference found {id_num}")
     # print(args)
+    n_procs = 0
     for i in range(len(data_table.index)):
         data_row = data_table.iloc[i].to_dict().copy()
         new_data = ntp.NtpEntry()
@@ -103,8 +104,9 @@ def main():
         tmp_num = new_data.commit_to_db(incoming_col, upsert=args.upsert)
         id_num = max(tmp_num, id_num)
         if args.verbose:
-            print("Processed", new_data.ntp_id)
-    logging.info(f"Completed {id_num} documents")
+            logging.info(f"Processed {new_data.ntp_id}")
+        n_procs += 1
+    logging.info(f"Completed {n_procs} documents")
 
 if __name__ == "__main__":
     main()
