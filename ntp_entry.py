@@ -9,6 +9,7 @@ import numpy as np
 from urllib.parse import urlparse, unquote
 import pandas as pd
 from bs4 import BeautifulSoup
+from http import HTTPStatus
 
 ACCEPTED_DOC_TYPES = (
     '7z', 'doc', 'docx', 'pdf',
@@ -25,6 +26,7 @@ REDIRECT_CODES = (301, 302, 303, 307, 308)
 SKIPPED = 1
 UNWANTED_TYPE = 2
 STORE_OK = 200
+SSL_ERROR = 3
 ERROR = -1
 
 def parse_ntp_id(ntp_id):
@@ -159,22 +161,27 @@ class NtpEntry:
             storage=None,
             replace=False,
             scan_only=False,
-            allow_redirects=False
-            ):
+            allow_redirects=False,
+            verify_ca=True
+    ):
         ''' Retrieves and stores document accounting for possible redirections'''
         url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
         try:
             response = requests.get(
                 url,
                 timeout=TIMEOUT,
-                allow_redirects=allow_redirects
+                allow_redirects=allow_redirects,
+                verify=verify_ca
             )
             logging.debug(response.headers)
 
             while response.status_code in REDIRECT_CODES:
                 url = response.headers['Location']
                 logging.warning(f"Found {response.status_code}: Redirecting to {url}")
-                response = requests.get(url, timeout=TIMEOUT)
+                response = requests.get(
+                    url, timeout=TIMEOUT,
+                    verify=verify_ca
+                )
 
             if response.status_code == 200:
                 doc_type = get_file_type(response.headers)
@@ -190,7 +197,8 @@ class NtpEntry:
                         response = requests.get(
                             redir_url,
                             timeout=TIMEOUT,
-                            allow_redirects=allow_redirects
+                            allow_redirects=allow_redirects,
+                            verify=verify_ca
                         )
                         logging.debug(response.headers)
                         if response.status_code == 200:
@@ -207,16 +215,20 @@ class NtpEntry:
                         return STORE_OK, doc_type
                     return SKIPPED, doc_type
                 return UNWANTED_TYPE, doc_type
-            logging.error(f"Not Found: {url}")
-            return response.status_code, 'Not Found'
+            logging.error(f"{HTTPStatus(response.status_code).phrase}: {url}")
+            return response.status_code, HTTPStatus(response.status_code).phrase
+        except requests.exceptions.SSLError as err:
+            logging.error(err)
+            return SSL_ERROR, err
         except requests.exceptions.ReadTimeout:
             logging.error(f"TimeOut: {url}")
             return ERROR, 'Timeout'
-        except Exception as e:
-            logging.error(e)
+        except Exception as err:
+            logging.error(err)
         return ERROR, 'unknown'
 
     def diff_document(self, other):
+        ''' Find patch from two versions of atom'''
         new = {}
         modif = {}
         miss ={}
@@ -244,9 +256,11 @@ def get_file_type(headers):
     if 'Content-type' in headers:
         debug.append(f"Content-type: {headers['Content-type']}")
         if headers['Content-type'] == 'application/pdf':
-            doc_type='pdf'
+            doc_type = 'pdf'
         elif headers['Content-type'].startswith('text/html'):
-            doc_type='html'
+            doc_type = 'html'
+        elif headers['Content-type'] == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            doc_type = 'docx'
     if 'Content-disposition' in headers:
         debug.append(f"Content-Disposition: {headers['Content-Disposition']}")
         headers['Content-disposition'] = headers['Content-disposition'].replace('769;','_').replace('8230;','_')

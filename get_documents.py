@@ -49,6 +49,7 @@ def main():
     parser.add_argument('--delay', action='store', default=0, type=int, help="Time delay between requests to same server")
     parser.add_argument('--container', action='store_true', help="Swift container to use", default='PLACE')
     parser.add_argument('--allow_redirects', action='store_true', help='Allow for automatic redirects on HTTP 301 302')
+    # parser.add_argument('--no_verify', action='store_true', help='Do not verify certificates')
     parser.add_argument('--type', action='store', help='tipo: mayores|menores', default='mayores')
 
     args = parser.parse_args()
@@ -161,7 +162,7 @@ def main():
                 time.sleep(args.delay)
             else:
                 last_server = ntp_doc.get_server(url_field)
-            #print(f"{last_server}")
+            # print(f"{last_server}")
             results = ntp_doc.store_document(
                 url_field,
                 replace=args.replace,
@@ -176,6 +177,8 @@ def main():
                     logging.info(f"{url_field} skipped, unwanted file type {results[1]}")
                 elif results[0] == ntp.STORE_OK:
                     logging.info(f"File Stored as {ntp_doc.get_file_name(url_field, results[1])}")
+                elif results[0] == ntp.SSL_ERROR:
+                    logging.info(f"{url_field} unavailable, Reason: certificate error")
                 else:
                     logging.warning(f"{url_field} unavailable. Reason: {results[1]}")
     if args.verbose:
