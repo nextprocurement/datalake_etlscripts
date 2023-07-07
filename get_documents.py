@@ -143,7 +143,6 @@ def main():
         if args.fin is not None:
             query.append({'_id':{'$lte': args.fin}})
         query = {'$and': query}
-
     num_ids = 0
     last_server = ''
     for doc in list(incoming_col.find(query, {'_id':1})):
