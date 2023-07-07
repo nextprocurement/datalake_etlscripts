@@ -21,6 +21,12 @@ TIMEOUT = 10
 
 REDIRECT_CODES = (301, 302, 303, 307, 308)
 
+# EXIT_CODES
+SKIPPED = 1
+UNWANTED_TYPE = 2
+STORE_OK = 200
+ERROR = -1
+
 def parse_ntp_id(ntp_id):
     ''' Get document order from ntp_id
         Parameters:
@@ -64,6 +70,23 @@ def parse_parquet(pd_data_row, new_cols):
     # if r:
     #    print(new_data,"\n")
     return new_data
+
+
+def _check_meta_refresh(url, contents):
+    """Check for redirection as http-equiv:refresh tags"""
+    soup = BeautifulSoup(contents, features='lxml')
+    result = soup.find("meta", attrs={"http-equiv": "refresh"})
+    if result:
+        wait, text = result["content"].split(";")
+        if text.strip().lower().startswith("url="):
+            redir_url = text.strip()[4:].replace("'", "")
+            logging.debug(f"Found meta refresh {redir_url}")
+            if redir_url.startswith('/'):
+                parsed_url = urlparse(url)
+                redir_url = f"{parsed_url.scheme}://{parsed_url.hostname}{redir_url}"
+            logging.debug(f"New URL found {redir_url}")
+            return redir_url
+    return ''
 
 class NtpEntry:
     def __init__(self):
@@ -130,22 +153,6 @@ class NtpEntry:
     def get_server(self, field):
         return urlparse(self.data[field]).netloc
 
-    def _check_meta_refresh(self, url, contents):
-        #res = requests.get(url, stream=True)
-        soup = BeautifulSoup(contents, features='lxml')
-        result = soup.find("meta", attrs={"http-equiv": "refresh"})
-        if result:
-            wait, text = result["content"].split(";")
-            if text.strip().lower().startswith("url="):
-                redir_url = text.strip()[4:].replace("'", "")
-                logging.debug(f"Found meta refresh {redir_url}")
-                if redir_url.startswith('/'):
-                    parsed_url = urlparse(url)
-                    redir_url = f"{parsed_url.scheme}://{parsed_url.hostname}{redir_url}"
-                logging.debug(f"New URL found {redir_url}")
-                return redir_url
-        return ''
-
     def store_document(
             self,
             field,
@@ -154,46 +161,60 @@ class NtpEntry:
             scan_only=False,
             allow_redirects=False
             ):
-        url = unquote(self.data[field]).replace(' ','%20').replace('+','')
+        ''' Retrieves and stores document accounting for possible redirections'''
+        url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
         try:
-            r = requests.get(url, timeout=TIMEOUT, allow_redirects=allow_redirects)
-            logging.debug(r.headers)
-    #        print(vars(r))
-            while r.status_code in REDIRECT_CODES:
-                url = r.headers['Location']
-                logging.warning(f"Found {r.status_code}: Redirecting to {url}")
-                r = requests.get(url, timeout=TIMEOUT)
+            response = requests.get(
+                url,
+                timeout=TIMEOUT,
+                allow_redirects=allow_redirects
+            )
+            logging.debug(response.headers)
 
-            if r.status_code == 200:
-                doc_type = get_file_type(r.headers)
+            while response.status_code in REDIRECT_CODES:
+                url = response.headers['Location']
+                logging.warning(f"Found {response.status_code}: Redirecting to {url}")
+                response = requests.get(url, timeout=TIMEOUT)
+
+            if response.status_code == 200:
+                doc_type = get_file_type(response.headers)
+
                 if doc_type:
                     logging.debug(f"DOC_TYPE {doc_type}")
                 else:
                     logging.debug(f"EMPTY DOC TYPE at {self.ntp_id}")
+
                 if doc_type == 'html':
-                    redir_url = self._check_meta_refresh(url, r.content)
+                    redir_url = _check_meta_refresh(url, response.content)
                     if redir_url:
-                        r = requests.get(redir_url, timeout=TIMEOUT, allow_redirects=allow_redirects)
-                        logging.debug(r.headers)
-                        if r.status_code == 200:
-                            doc_type = get_file_type(r.headers)
+                        response = requests.get(
+                            redir_url,
+                            timeout=TIMEOUT,
+                            allow_redirects=allow_redirects
+                        )
+                        logging.debug(response.headers)
+                        if response.status_code == 200:
+                            doc_type = get_file_type(response.headers)
                             logging.debug(f"New doc type {doc_type}")
                             url = redir_url
+                        else:
+                            return response.status_code, 'Error on redirect'
+
                 if doc_type in ACCEPTED_DOC_TYPES:
                     file_name = self.get_file_name(field, doc_type)
                     if not scan_only and (replace or not storage.file_exists(file_name)):
-                        storage.file_store(file_name, r.content)
-                        return r.status_code, doc_type
-                    return 1, doc_type
-                return 2, doc_type
+                        storage.file_store(file_name, response.content)
+                        return STORE_OK, doc_type
+                    return SKIPPED, doc_type
+                return UNWANTED_TYPE, doc_type
             logging.error(f"Not Found: {url}")
-            return r.status_code, 'Not Found'
+            return response.status_code, 'Not Found'
         except requests.exceptions.ReadTimeout:
             logging.error(f"TimeOut: {url}")
-            return -1, 'Timeout'
+            return ERROR, 'Timeout'
         except Exception as e:
             logging.error(e)
-        return -1, 'unknown'
+        return ERROR, 'unknown'
 
     def diff_document(self, other):
         new = {}

@@ -170,11 +170,11 @@ def main():
                 allow_redirects=args.allow_redirects
             )
             if args.verbose:
-                if results[0] == 1:
+                if results[0] == ntp.SKIPPED:
                     logging.info(f"{url_field} skipped, File already exists and --replace not set or --scan_only")
-                elif results[0] == 2:
+                elif results[0] == ntp.UNWANTED_TYPE:
                     logging.info(f"{url_field} skipped, unwanted file type {results[1]}")
-                elif results[0] == 200:
+                elif results[0] == ntp.STORE_OK:
                     logging.info(f"File Stored as {ntp_doc.get_file_name(url_field, results[1])}")
                 else:
                     logging.warning(f"{url_field} unavailable. Reason: {results[1]}")
