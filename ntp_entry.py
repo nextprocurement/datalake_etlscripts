@@ -22,6 +22,7 @@ ACCEPTED_DOC_TYPES = (
 TIMEOUT = 10
 
 REDIRECT_CODES = (301, 302, 303, 307, 308)
+MAX_REDIRECTS = 30
 
 # EXIT_CODES
 SKIPPED = 1
@@ -183,8 +184,9 @@ class NtpEntry:
                 verify=verify_ca
             )
             logging.debug(response.headers)
-
-            while response.status_code in REDIRECT_CODES:
+            num_redirects = 0
+            while response.status_code in REDIRECT_CODES and num_redirects <= MAX_REDIRECTS:
+                num_redirects +=1
                 url = response.headers['Location']
                 logging.warning(f"Found {response.status_code}: Redirecting to {url}")
                 logging.debug(f"IP: {','.join(_get_ips(url))}")
@@ -192,6 +194,8 @@ class NtpEntry:
                     url, timeout=TIMEOUT,
                     verify=verify_ca
                 )
+            if num_redirects > MAX_REDIRECTS:
+                logging.warning(f"Max. Redirects {MAX_REDIRECTS} achieved, skipping")
 
             if response.status_code == 200:
                 doc_type = get_file_type(response.headers)
