@@ -8,6 +8,8 @@ import requests
 import numpy as np
 from urllib.parse import urlparse, unquote
 import pandas as pd
+from bs4 import BeautifulSoup
+from http import HTTPStatus
 
 ACCEPTED_DOC_TYPES = (
     '7z', 'doc', 'docx', 'pdf',
@@ -19,6 +21,13 @@ ACCEPTED_DOC_TYPES = (
 TIMEOUT = 10
 
 REDIRECT_CODES = (301, 302, 303, 307, 308)
+
+# EXIT_CODES
+SKIPPED = 1
+UNWANTED_TYPE = 2
+STORE_OK = 200
+SSL_ERROR = 3
+ERROR = -1
 
 def parse_ntp_id(ntp_id):
     ''' Get document order from ntp_id
@@ -41,13 +50,45 @@ def parse_parquet(pd_data_row, new_cols):
             new_cols (dict): Dictionary with translated columns names
     '''
     new_data = {}
+    r = False
     for col in pd_data_row:
         if isinstance(pd_data_row[col], np.ndarray):
             pd_data_row[col] = list(pd_data_row[col])
         elif pd.isna(pd_data_row[col]):
             pd_data_row[col] = ''
-        new_data[new_cols.loc[col]['DBFIELD']] = pd_data_row[col]
+
+        try:
+            if new_cols.loc[col]['DBFIELD'] in new_data:
+                r = True
+                if not isinstance(new_data[new_cols.loc[col]['DBFIELD']], list):
+                    new_data[new_cols.loc[col]['DBFIELD']] = [new_data[new_cols.loc[col]['DBFIELD']]]
+                    logging.debug(f"WARNING: multiple values found for {new_cols.loc[col]['DBFIELD']}, appending")
+                new_data[new_cols.loc[col]['DBFIELD']].append(pd_data_row[col])
+            else:
+                new_data[new_cols.loc[col]['DBFIELD']] = pd_data_row[col]
+        except KeyError:
+            mod_col = col.replace('ContractFolderStatus - ', '').replace(' - ', '_')
+            loggin.error(f'"{col}"\t"{mod_col}"\"string"\n')
+    # if r:
+    #    print(new_data,"\n")
     return new_data
+
+
+def _check_meta_refresh(url, contents):
+    """Check for redirection as http-equiv:refresh tags"""
+    soup = BeautifulSoup(contents, features='lxml')
+    result = soup.find("meta", attrs={"http-equiv": "refresh"})
+    if result:
+        wait, text = result["content"].split(";")
+        if text.strip().lower().startswith("url="):
+            redir_url = text.strip()[4:].replace("'", "")
+            logging.debug(f"Found meta refresh {redir_url}")
+            if redir_url.startswith('/'):
+                parsed_url = urlparse(url)
+                redir_url = f"{parsed_url.scheme}://{parsed_url.hostname}{redir_url}"
+            logging.debug(f"New URL found {redir_url}")
+            return redir_url
+    return ''
 
 class NtpEntry:
     def __init__(self):
@@ -64,19 +105,33 @@ class NtpEntry:
     def set_ntp_id(self):
         self.ntp_id = 'ntp{:s}'.format(str(self.ntp_order).zfill(8))
 
-    def order_from_id(self, id):
+    def order_from_id(self):
         self.ntp_order = parse_ntp_id(self.ntp_id)
 
-    def commit_to_db(self, col):
+    def commit_to_db(self, col, upsert=False):
+        if upsert:
+            old_doc = col.find_one(
+                {'id': self.data['id'], 'updated': self.data['updated']}
+            )
+            if old_doc['_id']:
+                logging.info(f"Updating previous version {old_doc['_id']}")
+                self.data['_id'] = old_doc['_id']
+                self.ntp_id = old_doc['_id']
+                self.order_from_id()
         try:
-            new_id = col.insert_one(self.data)
+            col.replace_one(
+                {'_id': self.data['_id']},
+                 self.data,
+                 upsert=True
+            )
         except Exception as e:
             logging.debug(self.data)
             for k in self.data:
                 logging.debug(f"{k} {self.data[k]} {type(self.data[k])}")
             logging.error(e)
             sys.exit(1)
-        return new_id
+
+        return self.ntp_order
 
     def load_from_db(self, col_id,  ntp_id):
         try:
@@ -106,40 +161,94 @@ class NtpEntry:
             storage=None,
             replace=False,
             scan_only=False,
-            allow_redirects=False
-            ):
-        url = unquote(self.data[field]).replace(' ','%20').replace('+','')
+            allow_redirects=False,
+            verify_ca=True
+    ):
+        ''' Retrieves and stores document accounting for possible redirections'''
+        url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
         try:
-            r = requests.head(url, timeout=TIMEOUT, allow_redirects=allow_redirects)
-            logging.debug(r.headers)
-            print(vars(r))
-            while r.status_code in REDIRECT_CODES:
-                url = r.headers['Location']
-                logging.warning(f"Found {r.status_code}: Redirecting to {url}")
-                r = requests.head(url, timeout=TIMEOUT)
+            response = requests.get(
+                url,
+                timeout=TIMEOUT,
+                allow_redirects=allow_redirects,
+                verify=verify_ca
+            )
+            logging.debug(response.headers)
 
-            if r.status_code == 200:
-                doc_type = get_file_type(r.headers)
+            while response.status_code in REDIRECT_CODES:
+                url = response.headers['Location']
+                logging.warning(f"Found {response.status_code}: Redirecting to {url}")
+                response = requests.get(
+                    url, timeout=TIMEOUT,
+                    verify=verify_ca
+                )
+
+            if response.status_code == 200:
+                doc_type = get_file_type(response.headers)
+
                 if doc_type:
                     logging.debug(f"DOC_TYPE {doc_type}")
                 else:
                     logging.debug(f"EMPTY DOC TYPE at {self.ntp_id}")
+
+                if doc_type == 'html':
+                    redir_url = _check_meta_refresh(url, response.content)
+                    if redir_url:
+                        response = requests.get(
+                            redir_url,
+                            timeout=TIMEOUT,
+                            allow_redirects=allow_redirects,
+                            verify=verify_ca
+                        )
+                        logging.debug(response.headers)
+                        if response.status_code == 200:
+                            doc_type = get_file_type(response.headers)
+                            logging.debug(f"New doc type {doc_type}")
+                            url = redir_url
+                        else:
+                            return response.status_code, 'Error on redirect'
+
                 if doc_type in ACCEPTED_DOC_TYPES:
                     file_name = self.get_file_name(field, doc_type)
                     if not scan_only and (replace or not storage.file_exists(file_name)):
-                        res = requests.get(url, stream=True)
-                        storage.file_store(file_name, res.content)
-                        return r.status_code, doc_type
-                    return 1, doc_type
-                return 2, doc_type
-            logging.error(f"Not Found: {url}")
-            return r.status_code, 'Not Found'
+                        storage.file_store(file_name, response.content)
+                        return STORE_OK, doc_type
+                    return SKIPPED, doc_type
+                return UNWANTED_TYPE, doc_type
+            logging.error(f"{HTTPStatus(response.status_code).phrase}: {url}")
+            return response.status_code, HTTPStatus(response.status_code).phrase
+        except requests.exceptions.SSLError as err:
+            logging.error(err)
+            return SSL_ERROR, err
         except requests.exceptions.ReadTimeout:
             logging.error(f"TimeOut: {url}")
-            return -1, 'Timeout'
-        except Exception as e:
-            logging.error(e)
-        return -1, 'unknown'
+            return ERROR, 'Timeout'
+        except Exception as err:
+            logging.error(err)
+        return ERROR, 'unknown'
+
+    def diff_document(self, other):
+        ''' Find patch from two versions of atom'''
+        new = {}
+        modif = {}
+        miss ={}
+        for k in self.data:
+            if k == '_id':
+                continue
+            if k in other.data:
+                if self.data[k] == other.data[k]:
+                    continue
+                else:
+                    modif[k] = (self.data[k], other.data[k])
+            else:
+                miss[k] = self.data[k]
+
+        for k in other.data:
+            if k in self.data:
+                continue
+            else:
+                new[k] = other.data[k]
+        return (new, modif, miss)
 
 def get_file_type(headers):
     doc_type = ''
@@ -147,9 +256,11 @@ def get_file_type(headers):
     if 'Content-type' in headers:
         debug.append(f"Content-type: {headers['Content-type']}")
         if headers['Content-type'] == 'application/pdf':
-            doc_type='pdf'
+            doc_type = 'pdf'
         elif headers['Content-type'].startswith('text/html'):
-            doc_type='html'
+            doc_type = 'html'
+        elif headers['Content-type'] == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            doc_type = 'docx'
     if 'Content-disposition' in headers:
         debug.append(f"Content-Disposition: {headers['Content-Disposition']}")
         headers['Content-disposition'] = headers['Content-disposition'].replace('769;','_').replace('8230;','_')

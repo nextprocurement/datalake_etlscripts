@@ -4,6 +4,7 @@
 import sys
 import argparse
 import logging
+import re
 import pandas as pd
 from yaml import load, CLoader
 import ntp_entry as ntp
@@ -30,6 +31,8 @@ def main():
     parser.add_argument('--config', action='store', help="Configuration file", default="secrets.yml")
     parser.add_argument('--debug', action='store_true', help="Add Debug information")
     parser.add_argument('-v','--verbose', action='store_true', help="Add Extra information")
+    parser.add_argument('--type', action='store', default='mayores', help="mayores|menores")
+    parser.add_argument('--upsert', action='store_true', help="update existing atom or insert a new one")
 
     parser.add_argument('codes_file', help="Columns sanitized names")
     parser.add_argument('pkt_file', help="Parquet file")
@@ -48,6 +51,7 @@ def main():
     logging.info(f"Configuration: {args.config}")
     logging.info(f"Parquet:       {args.pkt_file}")
     logging.info(f"Codes:         {args.codes_file}")
+    logging.info(f"Type:          {args.type}")
 
     logging.info("Connecting MongoDB")
     db_lnk = Mongo_db(
@@ -58,32 +62,51 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    incoming_col = db_lnk.db.get_collection('incoming')
+    if args.type == 'mayores':
+        incoming_col = db_lnk.db.get_collection('place')
+    else:
+        incoming_col = db_lnk.db.get_collection('place_menores')
 
     data_table = pd.read_parquet(args.pkt_file, use_nullable_dtypes=True)
     new_cols = pd.read_csv(args.codes_file, sep='\t', index_col='ORIGINAL')
 
+    if args.type=='mayores':
+        id_num = 0
+    else:
+        id_num = 10000000
     if args.drop:
         logging.info("Dropping previously stored data")
         incoming_col.drop()
-        id_num = 0
     else:
+        if args.type == 'mayores':
+            cond = {'_id': {'$regex': 'ntp0'}}
+        else:
+            cond = {'_id': {'$regex': 'ntp1'}}
         max_id_c = incoming_col.aggregate(
-                    [{'$group':{'_id':'max_id', 'value':{'$max': '$_id'}}}]
+                    [
+                        {'$match': cond},
+                        {'$group':{'_id':'max_id', 'value':{'$max': '$_id'}}}
+                    ]
                 )
-        id_num = ntp.parse_ntp_id(list(max_id_c)[0]['value'])
+        max_id = list(max_id_c)
+        if max_id:
+            id_num = ntp.parse_ntp_id(max_id[0]['value'])
+        else:
+            logging.info("No records found")
 
     logging.info(f"Last reference found {id_num}")
-    #print(args)
+    # print(args)
+    n_procs = 0
     for i in range(len(data_table.index)):
         data_row = data_table.iloc[i].to_dict().copy()
-        id_num += 1
         new_data = ntp.NtpEntry()
-        new_data.load_data(id_num, ntp.parse_parquet(data_row, new_cols))
-        new_data.commit_to_db(incoming_col)
+        new_data.load_data(id_num + 1, ntp.parse_parquet(data_row, new_cols))
+        tmp_num = new_data.commit_to_db(incoming_col, upsert=args.upsert)
+        id_num = max(tmp_num, id_num)
         if args.verbose:
-            print("Processed", new_data.ntp_id)
-    logging.info(f"Completed {id_num} documents")
+            logging.info(f"Processed {new_data.ntp_id}")
+        n_procs += 1
+    logging.info(f"Completed {n_procs} documents")
 
 if __name__ == "__main__":
     main()

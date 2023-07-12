@@ -69,6 +69,7 @@ def main():
     parser.add_argument('--replace', action='store_true', help='Replace existing files')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
+    parser.add_argument('--check_only',action='store_true', help='Check only, no transfer')
 
     args = parser.parse_args()
     # Setup logging
@@ -137,11 +138,11 @@ def main():
             logging.error("Origin and destination points to gridFS, exiting")
             sys.error(1)
         if where_from == 'gridfs':
-            log_message_i = "Using Origin GridFS storage"
+            log_message_i = f"Using Origin GridFS storage at {config['MONGODB_HOST']}"
             from_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
             from_folder = 'downloadedDocuments'
         if where_to == 'gridfs':
-            log_message_o = "Using Destination GridFS storage"
+            log_message_o = f"Using Destination GridFS storage at {config['MONGODB_HOST']}"
             to_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
             to_folder = 'downloadedDocuments'
 
@@ -230,34 +231,41 @@ def main():
                 to_delete.append(file)
         logging.info(f"{len(to_delete)} files to delete at Destination")
 
-    if args.verbose:
-        logging.info(f"Starting transfer")
+    if not args.check_only:
+        if args.verbose:
+            logging.info(f"Starting transfer")
 
-    n_delete = 0
-    n_transfer = 0
+        n_delete = 0
+        n_transfer = 0
 
-    if args.delete:
-        for file in to_delete:
-            try:
-                to_storage.delete_file(file)
-                n_delete += 1
-            except Exception as e:
-                logging.debug(e)
-                logging.error(f"Error deleting {file}")
+        if args.delete:
+            for file in to_delete:
+                try:
+                    if args.verbose:
+                        logging.info(f"Deleting {file}")
+                    to_storage.delete_file(file)
+                    n_delete += 1
+                except Exception as e:
+                    logging.debug(e)
+                    logging.error(f"Error deleting {file}")
 
-    if args.replace:
-        to_transfer = from_files
+        if args.replace:
+            to_transfer = from_files
+        else:
+            to_transfer = new_files
+        if not args.check_only:
+            for file in to_transfer:
+                try:
+                    if args.verbose:
+                        logging.info(f"Transferring {file}")
+                    to_storage.file_store(file, from_storage.file_read(file))
+                    n_transfer += 1
+                except Exception as e:
+                    logging.debug(e)
+                    logging.error(f"Error storing {file}")
+            logging.info(f"Transfer completed. {n_transfer} files transferred, {n_delete} files deleted")
     else:
-        to_transfer = new_files
-
-    for file in to_transfer:
-        try:
-            to_storage.file_store(file, from_storage.file_read(file))
-            n_transfer += 1
-        except Exception as e:
-            logging.debug(e)
-            logging.error(f"Error storing {file}")
-    logging.info(f"Transfer completed. {n_transfer} files transferred, {n_delete} files deleted")
+        logging.info(f"no action done (--check_only)")
 
 if __name__ == "__main__":
     main()

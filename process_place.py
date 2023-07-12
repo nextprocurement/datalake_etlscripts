@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-''' Script to load PDF documents onto data_lake, takes input data from MongoDB
+''' Script to build historical on place
     usage: process_place.py [-h] [--ini INI] [--fin FIN] [--id ID]
 '''
 import sys
@@ -13,17 +13,28 @@ import ntp_entry as ntp
 import ntp_storage as ntpst
 from mmb_data.mongo_db_connect import Mongo_db
 
+
+def print_stats(lits):
+    stats = {}
+    for l in lits:
+        if len(lits[l]) not in stats:
+            stats[len(lits[l])] = 1
+        else:
+            stats[len(lits[l])] += 1
+    return stats
+
+
 def main():
     ''' Main '''
 
     parser = argparse.ArgumentParser(description='Download documents')
-    parser.add_argument('--replace', action='store_true', help='Replace existing files')
     parser.add_argument('--ini', action='store', help='Initial document range')
     parser.add_argument('--fin', action='store', help='Final document range')
     parser.add_argument('--id', action='store', help='Selected document id')
     parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
+    parser.add_argument('--drop',action='store_true', help='Drop patch collection on start')
 
     args = parser.parse_args()
     # Setup logging
@@ -48,7 +59,7 @@ def main():
         connect_db=True
     )
     incoming_col = db_lnk.db.get_collection('place')
-    curated_col = db_lnk.db.get_collection('place_curated')
+    patch_col = db_lnk.db.get_collection('place_patch')
 
     if args.verbose:
         logging.info("Getting ids...")
@@ -68,21 +79,59 @@ def main():
             query.append({'_id':{'$lte': args.fin}})
         query = {'$and': query}
 
-    num_ids = 0
-    num_place_ids = 0
     LICS = {}
-    for doc in list(incoming_col.find(query, {'_id':1, 'id':1})):
-        ntp_id = doc['_id']
-        place_id = os.path.basename(doc['id'])
-        if place_id not in LICS:
-            LICS[place_id] = [ntp_id]
-            num_place_ids += 1
+    STATS = {}
+    for doc in list(incoming_col.aggregate([{'$group':{'_id':'$id','versions':{'$addToSet':"$_id"}}}])):
+        if len(doc['versions']) == 1:
+            continue
+        place_id = os.path.basename(doc['_id'])
+        LICS[place_id] = doc['versions']
+        if len(doc['versions']) in STATS:
+            STATS[len(doc['versions'])] += 1
         else:
-            LICS[place_id].append(ntp_id)
-        num_ids += 1
-        ntp_doc = ntp.NtpEntry()
-        ntp_doc.load_from_db(incoming_col, ntp_id)
-    logging.info(f"{num_ids} available, grouped on {num_place_ids} licitations")
+            STATS[len(doc['versions'])] = 1
+    logging.info(f"Found versioned entries: {[str(k) + ':' + str(v) for k,v in sorted (STATS.items())]}")
+
+    if args.drop:
+        logging.info("Dropping patch collection")
+        patch_col.delete_many({})
+
+    logging.info("Start processing")
+    num_ids = 0
+    num_new = 0
+    num_mod = 0
+    num_del = 0
+    for place_id in LICS:
+        if args.verbose:
+            print(f"Processing place_id {place_id} with {len(LICS[place_id]) - 1} updates ")
+        base_id = sorted(LICS[place_id])[0]
+        base_doc = ntp.NtpEntry()
+        base_doc.load_from_db(incoming_col, base_id)
+        for id in LICS[place_id]:
+            if id == base_id:
+                continue
+            new_doc = ntp.NtpEntry()
+            new_doc.load_from_db(incoming_col, id)
+            new, modif, miss = base_doc.diff_document(new_doc)
+            patch = {}
+            if new:
+                patch['add'] = new
+                num_new += 1
+            if modif:
+                patch['mod'] = modif
+                num_mod += 1
+            if miss:
+                patch['del'] = miss
+                num_del += 1
+            num_ids += 1
+            patch_col.update_one(
+                {'_id': place_id},
+                {
+                    '$set': {'_id': place_id, 'base_id': base_id, 'update': {'id': id,'patched_values': patch}}
+                },
+                upsert=True
+            )
+    logging.info(f"Processed {num_ids} entries, added {num_new}, modified {num_mod}, deleted {num_del}")
 
 if __name__ == "__main__":
     main()
