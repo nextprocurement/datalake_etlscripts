@@ -10,6 +10,7 @@ from urllib.parse import urlparse, unquote
 import pandas as pd
 from bs4 import BeautifulSoup
 from http import HTTPStatus
+import dns.resolver
 
 ACCEPTED_DOC_TYPES = (
     '7z', 'doc', 'docx', 'pdf',
@@ -90,6 +91,13 @@ def _check_meta_refresh(url, contents):
             return redir_url
     return ''
 
+def _get_ips(url):
+    ip_solver = dns.resolver.query(urlparse(url).netloc)
+    ips = []
+    for ipval in ip_solver:
+        ips.append(ipval.to_text())
+    return ips
+
 class NtpEntry:
     def __init__(self):
         self.ntp_order = 0
@@ -167,6 +175,7 @@ class NtpEntry:
         ''' Retrieves and stores document accounting for possible redirections'''
         url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
         try:
+            logging.debug(f"IP: {','.join(_get_ips(url))}")
             response = requests.get(
                 url,
                 timeout=TIMEOUT,
@@ -178,6 +187,7 @@ class NtpEntry:
             while response.status_code in REDIRECT_CODES:
                 url = response.headers['Location']
                 logging.warning(f"Found {response.status_code}: Redirecting to {url}")
+                logging.debug(f"IP: {','.join(_get_ips(url))}")
                 response = requests.get(
                     url, timeout=TIMEOUT,
                     verify=verify_ca
@@ -194,6 +204,7 @@ class NtpEntry:
                 if doc_type == 'html':
                     redir_url = _check_meta_refresh(url, response.content)
                     if redir_url:
+                        logging.debug(f"IP: {','.join(_get_ips(url))}")
                         response = requests.get(
                             redir_url,
                             timeout=TIMEOUT,
