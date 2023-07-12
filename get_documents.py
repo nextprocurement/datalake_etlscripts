@@ -32,6 +32,13 @@ import ntp_entry as ntp
 import ntp_storage as ntpst
 from mmb_data.mongo_db_connect import Mongo_db
 
+FIELDS_TO_SKIP = [
+        'id', 
+        'LocatedContractingParty_WebsiteURI', 
+        'URL_perfil_contratante'
+]
+
+
 def main():
     ''' Main '''
 
@@ -153,7 +160,7 @@ def main():
         ntp_doc = ntp.NtpEntry()
         ntp_doc.load_from_db(incoming_col, ntp_id)
         for url_field in ntp_doc.extract_urls():
-            if url_field == 'id':
+            if url_field in FIELDS_TO_SKIP:
                 continue
             if args.debug:
                 logging.debug(f"{url_field}: {ntp_doc.data[url_field]}")
