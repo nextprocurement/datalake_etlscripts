@@ -122,7 +122,7 @@ class NtpEntry:
             old_doc = col.find_one(
                 {'id': self.data['id'], 'updated': self.data['updated']}
             )
-            if old_doc['_id']:
+            if old_doc and old_doc['_id']:
                 logging.info(f"Updating previous version {old_doc['_id']}")
                 self.data['_id'] = old_doc['_id']
                 self.ntp_id = old_doc['_id']
