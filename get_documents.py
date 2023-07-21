@@ -159,11 +159,16 @@ def main():
         ntp_doc = ntp.NtpEntry()
         ntp_doc.load_from_db(incoming_col, ntp_id)
         for url_field in ntp_doc.extract_urls():
-            if url_field in FIELDS_TO_SKIP:
-                logging.debug(f"Skipping {url_field}")
+            if ':' in url_field:
+                url_base, url_index = url_field.split(':')
+            else:
+                url_base = url_field
+                url_index = -1
+            if url_base in FIELDS_TO_SKIP:
+                logging.debug(f"Skipping {url_base}")
                 continue
             if args.debug:
-                logging.debug(f"{url_field}: {ntp_doc.data[url_field]}")
+                logging.debug(f"{url_base}: {ntp_doc.data[url_base]}")
             if args.delay and ntp_doc.get_server(url_field) == last_server:
                 time.sleep(args.delay)
             else:

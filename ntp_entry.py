@@ -156,13 +156,22 @@ class NtpEntry:
         for k in self.data:
             if isinstance(self.data[k], str) and self.data[k].startswith('http'):
                 urls[k] = self.data[k]
+            if isinstance(self.data[k], list):
+                for index, url in enumerate(self.data[k]):
+                    if isinstance(url, str) and url.startswith('http'):
+                        urls[f"{k}:{index}"] = url
         return urls
 
     def get_file_name(self, field, ext):
         return f'{self.ntp_id}_{field}.{ext}'
 
     def get_server(self, field):
-        return urlparse(self.data[field]).netloc
+        if ':' in field:
+            base, index = field.split(':')
+            return urlparse(self.data[base][int(index)]).netloc
+        else:
+            base = field
+            return urlparse(self.data[field]).netloc
 
     def store_document(
             self,
@@ -174,7 +183,12 @@ class NtpEntry:
             verify_ca=True
     ):
         ''' Retrieves and stores document accounting for possible redirections'''
-        url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
+        if ':' in field:
+            base, index = field.split(':')
+            url = unquote(self.data[base][int(index)]).replace(' ', '%20').replace('+', '')
+        else:
+            base = field
+            url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
         try:
             logging.debug(f"IP: {','.join(_get_ips(url))}")
             response = requests.get(
