@@ -27,7 +27,7 @@ from mmb_data.mongo_db_connect import Mongo_db
 DNI_REGEX = r'^(\d{8})([A-Z])$'
 CIF_REGEX = r'^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$'
 NIE_REGEX = r'^[XYZ]\d{7,8}[A-Z]$'
-
+FIELDS = ['Nombre', 'Ubicacion_organica', '']
 
 def valid_nif(a):
     a = a.upper().replace('-','')
@@ -116,13 +116,8 @@ def main():
                     else:
                         contracting_party['other_ids'].append(item)
 
-        if 'Nombre' in ntp_doc.data:
-            contracting_party['Nombre'] = ntp_doc.data['Nombre']
-        if 'Ubicacion_organica' in ntp_doc.data:
-            contracting_party['Ubicacion_organica'] = ntp_doc.data['Ubicacion_organica']
-
         for k in ntp_doc.data:
-            if 'LocatedContractingParty' in k:
+            if k in FIELDS or 'LocatedContractingParty' in k:
                 contracting_party[k] = ntp_doc.data[k]
 
         if 'nif' in contracting_party and valid_nif(contracting_party['nif']):
