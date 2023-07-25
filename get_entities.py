@@ -24,9 +24,14 @@ import ntp_entry as ntp
 import ntp_storage as ntpst
 from mmb_data.mongo_db_connect import Mongo_db
 
+DNI_REGEX = r'^(\d{8})([A-Z])$'
+CIF_REGEX = r'^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$'
+NIE_REGEX = r'^[XYZ]\d{7,8}[A-Z]$'
+
 
 def valid_nif(a):
-    return len(a) == 9
+    a = a.upper().replace('-','')
+    return re.match(CIF_REGEX, a) or re.match(DNI_REGEX, a) or re.match(NIE_REGEX, a)
 
 
 def main():
@@ -54,7 +59,7 @@ def main():
     with open(args.config, 'r')  as config_file:
         config = load(config_file, Loader=CLoader)
 
-    logging.info("Connecting to MongoDB")
+    logging.info(f"Connecting to MongoDB as {config['MONGODB_HOST']}")
 
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
@@ -101,46 +106,64 @@ def main():
 
         contracting_party = {}
         if 'ID' in ntp_doc.data :
-            if isinstance(ntp_doc.data['ID'], list):
-                contracting_party['rec'], contracting_party['nif'] = ntp_doc.data['ID']
-            else:
+            if not isinstance(ntp_doc.data['ID'], list):
                 contracting_party['nif'] = ntp_doc.data['ID']
+            else:
+                contracting_party['other_ids'] = []
+                for item in ntp_doc.data['ID']:
+                    if valid_nif(item):
+                        contracting_party['nif'] = item.replace('-','')
+                    else:
+                        contracting_party['other_ids'].append(item)
+
         if 'Nombre' in ntp_doc.data:
             contracting_party['Nombre'] = ntp_doc.data['Nombre']
+        if 'Ubicacion_organica' in ntp_doc.data:
+            contracting_party['Ubicacion_organica'] = ntp_doc.data['Ubicacion_organica']
+
         for k in ntp_doc.data:
             if 'LocatedContractingParty' in k:
                 contracting_party[k] = ntp_doc.data[k]
 
-
-        if valid_nif(contracting_party['nif']):
-            contracting_party['_id'] = contracting_party['nif']
-            contract_col.update_one(
-                {'_id':contracting_party['_id']},
-                {'$set': contracting_party},
-                upsert=True
-            )
+        if 'nif' in contracting_party and valid_nif(contracting_party['nif']):
+            contracting_party['_id'] = contracting_party['nif'].replace('-', '')
+            try:
+                contract_col.update_one(
+                    {'_id': contracting_party['_id']},
+                    {'$set': contracting_party},
+                    upsert=True
+                )
+            except Exception as e:
+                print(e)
+                print(contracting_party)
         else:
-            logging.error(f"No valid nif {contracting_party['nif']}")
-
-        print(contracting_party)
-
+            if 'nif' in contracting_party:
+                logging.error(f"nif contr. incorrecto {contracting_party['nif']}")
+            else:
+                logging.error(f"nif no encontrado")
+            print(contracting_party)
 
         adjudicatario = {}
 
         if 'Identificador' in ntp_doc.data:
-            for ind, nif in enumerate(ntp_doc.data['Identificador']):
+            for i, nif in enumerate(ntp_doc.data['Identificador']):
                 if valid_nif(nif):
+                    nif = nif.replace('-', '')
                     adjudicatario['_id'] = nif
                     adjudicatario['nif'] = nif
-                    adjudicatario['nombre'] = ntp_doc.data['Nombre_Adjudicatario'][ind]
-                    adjud_col.update_one(
-                        {'_id': id},
-                        {'$set': adjudicatario},
-                        upsert=True
-                    )
+                    adjudicatario['Nombre'] = ntp_doc.data['Nombre_Adjudicatario'][i]
+                    try:
+                        adjud_col.update_one(
+                            {'_id': nif},
+                            {'$set': adjudicatario},
+                            upsert=True
+                        )
+                    except Exception as e:
+                        print(e)
+                        print(adjudicatario)
                 else:
-                    logging.error(f"No valid nif {contracting_party['nif']}")
-                print(adjudicatario)
+                    logging.error(f"nif adj. incorrecto {nif}")
+                    print(ntp_doc.data['Nombre_Adjudicatario'][i])
 
 
 

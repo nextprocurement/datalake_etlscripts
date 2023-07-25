@@ -70,7 +70,7 @@ def parse_parquet(pd_data_row, new_cols):
                 new_data[new_cols.loc[col]['DBFIELD']] = pd_data_row[col]
         except KeyError:
             mod_col = col.replace('ContractFolderStatus - ', '').replace(' - ', '_')
-            loggin.error(f'"{col}"\t"{mod_col}"\"string"\n')
+            logging.error(f'"{col}"\t"{mod_col}"\"string"\n')
     # if r:
     #    print(new_data,"\n")
     return new_data
