@@ -22,6 +22,7 @@ ACCEPTED_DOC_TYPES = (
 TIMEOUT = 10
 
 REDIRECT_CODES = (301, 302, 303, 307, 308)
+MAX_REDIRECTS = 30
 
 # EXIT_CODES
 SKIPPED = 1
@@ -69,7 +70,7 @@ def parse_parquet(pd_data_row, new_cols):
                 new_data[new_cols.loc[col]['DBFIELD']] = pd_data_row[col]
         except KeyError:
             mod_col = col.replace('ContractFolderStatus - ', '').replace(' - ', '_')
-            loggin.error(f'"{col}"\t"{mod_col}"\"string"\n')
+            logging.error(f'"{col}"\t"{mod_col}"\"string"\n')
     # if r:
     #    print(new_data,"\n")
     return new_data
@@ -121,7 +122,7 @@ class NtpEntry:
             old_doc = col.find_one(
                 {'id': self.data['id'], 'updated': self.data['updated']}
             )
-            if old_doc['_id']:
+            if old_doc and old_doc['_id']:
                 logging.info(f"Updating previous version {old_doc['_id']}")
                 self.data['_id'] = old_doc['_id']
                 self.ntp_id = old_doc['_id']
@@ -155,13 +156,22 @@ class NtpEntry:
         for k in self.data:
             if isinstance(self.data[k], str) and self.data[k].startswith('http'):
                 urls[k] = self.data[k]
+            if isinstance(self.data[k], list):
+                for index, url in enumerate(self.data[k]):
+                    if isinstance(url, str) and url.startswith('http'):
+                        urls[f"{k}:{index}"] = url
         return urls
 
     def get_file_name(self, field, ext):
         return f'{self.ntp_id}_{field}.{ext}'
 
     def get_server(self, field):
-        return urlparse(self.data[field]).netloc
+        if ':' in field:
+            base, index = field.split(':')
+            return urlparse(self.data[base][int(index)]).netloc
+        else:
+            base = field
+            return urlparse(self.data[field]).netloc
 
     def store_document(
             self,
@@ -173,7 +183,12 @@ class NtpEntry:
             verify_ca=True
     ):
         ''' Retrieves and stores document accounting for possible redirections'''
-        url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
+        if ':' in field:
+            base, index = field.split(':')
+            url = unquote(self.data[base][int(index)]).replace(' ', '%20').replace('+', '')
+        else:
+            base = field
+            url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
         try:
             logging.debug(f"IP: {','.join(_get_ips(url))}")
             response = requests.get(
@@ -183,8 +198,9 @@ class NtpEntry:
                 verify=verify_ca
             )
             logging.debug(response.headers)
-
-            while response.status_code in REDIRECT_CODES:
+            num_redirects = 0
+            while response.status_code in REDIRECT_CODES and num_redirects <= MAX_REDIRECTS:
+                num_redirects +=1
                 url = response.headers['Location']
                 logging.warning(f"Found {response.status_code}: Redirecting to {url}")
                 logging.debug(f"IP: {','.join(_get_ips(url))}")
@@ -192,6 +208,8 @@ class NtpEntry:
                     url, timeout=TIMEOUT,
                     verify=verify_ca
                 )
+            if num_redirects > MAX_REDIRECTS:
+                logging.warning(f"Max. Redirects {MAX_REDIRECTS} achieved, skipping")
 
             if response.status_code == 200:
                 doc_type = get_file_type(response.headers)

@@ -257,7 +257,7 @@ def main():
             for file in to_transfer:
                 try:
                     if args.verbose:
-                        logging.info(f"Transferring {file}")
+                        logging.info(f"Transferring {file} ({n_transfer}/{len(to_transfer)})")
                     to_storage.file_store(file, from_storage.file_read(file))
                     n_transfer += 1
                 except Exception as e:

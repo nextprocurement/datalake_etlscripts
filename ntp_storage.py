@@ -182,7 +182,7 @@ class NtpStorageSwift (NtpStorage):
         try:
             headers, data = self.connection.delete_object(
                 self.container,
-                file_name
+                opj(self.data_prefix, file_name)
             )
         except Exception as e:
             logging.debug(e)

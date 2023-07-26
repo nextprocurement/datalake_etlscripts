@@ -32,6 +32,12 @@ import ntp_entry as ntp
 import ntp_storage as ntpst
 from mmb_data.mongo_db_connect import Mongo_db
 
+FIELDS_TO_SKIP = [
+        'id', 
+        'LocatedContractingParty_WebsiteURI', 
+        'URL_perfil_contratante'
+]
+
 def main():
     ''' Main '''
 
@@ -143,7 +149,6 @@ def main():
         if args.fin is not None:
             query.append({'_id':{'$lte': args.fin}})
         query = {'$and': query}
-
     num_ids = 0
     last_server = ''
     for doc in list(incoming_col.find(query, {'_id':1})):
@@ -154,10 +159,16 @@ def main():
         ntp_doc = ntp.NtpEntry()
         ntp_doc.load_from_db(incoming_col, ntp_id)
         for url_field in ntp_doc.extract_urls():
-            if url_field == 'id':
+            if ':' in url_field:
+                url_base, url_index = url_field.split(':')
+            else:
+                url_base = url_field
+                url_index = -1
+            if url_base in FIELDS_TO_SKIP:
+                logging.debug(f"Skipping {url_base}")
                 continue
             if args.debug:
-                logging.debug(f"{url_field}: {ntp_doc.data[url_field]}")
+                logging.debug(f"{url_base}: {ntp_doc.data[url_base]}")
             if args.delay and ntp_doc.get_server(url_field) == last_server:
                 time.sleep(args.delay)
             else:
