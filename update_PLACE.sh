@@ -12,6 +12,7 @@ dlsproc_process_zip.py $DATADIR/agregados/PlataformasAgregadasSinMenores_$1.zip 
 rclone -v copy $DATADIR/agregados_data/${1}.parquet nextp:PLACE/agregados_data
 dlsproc_rename_cols.py $DATADIR/agregados_data/$1.parquet $DLSPROC/samples/PLACE.yaml $DATADIR/agregados_data/${1}_flat.parquet
 rclone -v copy $DATADIR/agregados_data/${1}_flat.parquet nextp:PLACE/agregados_data
+python read_parquet.py -v --config secrets_mdb.yml --upsert columns_revised.tsv $DATADIR/agregados_data/${1}_flat.parquet 
 #Menores
 export BASEURL=https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_1143/contratosMenoresPerfilesContratantes_
 cd $DATADIR/menores
@@ -21,6 +22,7 @@ dlsproc_process_zip.py $DATADIR/menores/contratosMenoresPerfilesContratantes_$1.
 rclone -v copy $DATADIR/menores_data/${1}.parquet nextp:PLACE/menores_data
 dlsproc_rename_cols.py $DATADIR/menores_data/$1.parquet $DLSPROC/samples/PLACE.yaml $DATADIR/menores_data/${1}_flat.parquet
 rclone -v copy $DATADIR/menores_data/${1}_flat.parquet nextp:PLACE/menores_data
+python read_parquet.py -v --config secrets_mdb.yml --upsert --type menores columns_revised.tsv $DATADIR/menores_data/${1}_flat.parquet 
 #perfiles
 export BASEURL=https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_643/licitacionesPerfilesContratanteCompleto3_
 cd $DATADIR/perfiles
@@ -30,4 +32,5 @@ dlsproc_process_zip.py $DATADIR/perfiles/licitacionesPerfilesContratanteCompleto
 rclone -v copy $DATADIR/perfiles_data/${1}.parquet nextp:PLACE/perfiles_data
 dlsproc_rename_cols.py $DATADIR/perfiles_data/$1.parquet $DLSPROC/samples/PLACE.yaml $DATADIR/perfiles_data/${1}_flat.parquet
 rclone -v copy $DATADIR/perfiles_data/${1}_flat.parquet nextp:PLACE/perfiles_data
+python read_parquet.py -v --config secrets_mdb.yml --upsert columns_revised.tsv $DATADIR/perfiles_data/${1}_flat.parquet 
 
