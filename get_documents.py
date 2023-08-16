@@ -55,6 +55,7 @@ def main():
     parser.add_argument('--delay', action='store', default=0, type=int, help="Time delay between requests to same server")
     parser.add_argument('--container', action='store_true', help="Swift container to use", default='PLACE')
     parser.add_argument('--allow_redirects', action='store_true', help='Allow for automatic redirects on HTTP 301 302')
+    parser.add_argument('--skip_early', action='store_true', help='Skip immediately if any file for the corresponding field is already stored')
     # parser.add_argument('--no_verify', action='store_true', help='Do not verify certificates')
     parser.add_argument('--type', action='store', help='tipo: mayores|menores', default='mayores')
 
@@ -107,7 +108,7 @@ def main():
             logging.info(f"Using disk storage at {data_folder}")
 
         elif args.where == 'gridfs':
-            logging.info("Using GridFS storage")
+            logging.info(f"Using GridFS storage at {config['MONGODB_HOST']}")
             storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
 
         elif args.where == 'swift':
@@ -179,7 +180,8 @@ def main():
                 replace=args.replace,
                 storage=storage,
                 scan_only=args.scan_only,
-                allow_redirects=args.allow_redirects
+                allow_redirects=args.allow_redirects,
+                skip_early=args.skip_early
             )
             if args.verbose:
                 if results[0] == ntp.SKIPPED:

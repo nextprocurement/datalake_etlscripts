@@ -180,7 +180,8 @@ class NtpEntry:
             replace=False,
             scan_only=False,
             allow_redirects=False,
-            verify_ca=True
+            verify_ca=True,
+            skip_early=False
     ):
         ''' Retrieves and stores document accounting for possible redirections'''
         if ':' in field:
@@ -189,6 +190,10 @@ class NtpEntry:
         else:
             base = field
             url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
+        if skip_early:
+            file_name_root = self.get_file_name(field, '')
+            if storage.file_exists(file_name_root, no_ext=True):
+                return SKIPPED, field
         try:
             logging.debug(f"IP: {','.join(_get_ips(url))}")
             response = requests.get(
