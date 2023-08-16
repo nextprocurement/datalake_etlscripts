@@ -81,7 +81,7 @@ def main():
 
     LICS = {}
     STATS = {}
-    for doc in list(incoming_col.aggregate([{'$group':{'_id':'$id','versions':{'$addToSet':"$_id"}}}])):
+    for doc in list(incoming_col.aggregate([{'$group':{'_id':'$id','versions':{'$addToSet':"$_id"}}}], allowDiskUse=True)):
         if len(doc['versions']) == 1:
             continue
         place_id = os.path.basename(doc['_id'])
