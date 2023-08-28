@@ -191,6 +191,9 @@ class NtpEntry:
             base = field
             url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
         if skip_early:
+            if storage.type != 'gridfs':
+                logging.error(f"--skip_early only available for GridFS storage  (yet)")
+                sys.exit(1)
             file_name_root = self.get_file_name(field, '')
             if storage.file_exists(file_name_root, no_ext=True):
                 return SKIPPED, field

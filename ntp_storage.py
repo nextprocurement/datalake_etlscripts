@@ -104,7 +104,7 @@ class NtpStorageGridFs (NtpStorage):
     def file_list(self, id_range=None):
         list = []
 #        for file in self.gridfs.list():
-        for file in self.gridfs.find(no_cursor_timeout=True):
+        for file in self.gridfs.find():
             if id_range is None or is_in_range(get_ntpid(file.name), id_range):
                 list.append(file.name)
         return list
