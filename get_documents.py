@@ -71,7 +71,7 @@ def main():
     with open(args.config, 'r')  as config_file:
         config = load(config_file, Loader=CLoader)
 
-    logging.info("Connecting to MongoDB")
+    logging.info(f"Connecting to MongoDB at {config['MONGODB_HOST']}")
 
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
