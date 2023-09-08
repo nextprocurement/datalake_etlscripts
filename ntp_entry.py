@@ -273,17 +273,13 @@ class NtpEntry:
             if k == '_id':
                 continue
             if k in other.data:
-                if self.data[k] == other.data[k]:
-                    continue
-                else:
+                if self.data[k] != other.data[k]:
                     modif[k] = (self.data[k], other.data[k])
             else:
                 miss[k] = self.data[k]
 
         for k in other.data:
-            if k in self.data:
-                continue
-            else:
+            if k not in self.data:
                 new[k] = other.data[k]
         return (new, modif, miss)
 
