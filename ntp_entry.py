@@ -46,6 +46,13 @@ def check_ntp_id(ntp_id):
     '''
     return re.match(r'^ntp[0-9]{8}', ntp_id)
 
+def get_new_dbfield(col):
+    mod_col = col.replace('ContractFolderStatus - ', '').replace(' - ', '_').replace(' ', '_')
+    if '_(' in mod_col:
+        m = re.search(r'(.*)_\((.*)\)', mod_col)
+        mod_col = f"{m[2]}__{m[1]}"
+    return unidecode(mod_col)
+
 def parse_parquet(pd_data_row, new_cols):
     ''' Parse data Pandas' data row read from a parquet file
         Parameters:
@@ -70,8 +77,8 @@ def parse_parquet(pd_data_row, new_cols):
             else:
                 new_data[new_cols.loc[col]['DBFIELD']] = pd_data_row[col]
         except KeyError:
-            mod_col = col.replace('ContractFolderStatus - ', '').replace(' - ', '_').replace(' ', '_').replace(r'[\(\)]', '')
-            logging.error(f'"{col}"\t"{unidecode(mod_col)}"\t"string"\n')
+            mod_col = get_new_dbfield(col)
+            logging.error(f'"{col}"\t"{mod_col}"\t"string"\n')
     # if r:
     #    print(new_data,"\n")
     return new_data
