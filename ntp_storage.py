@@ -2,6 +2,7 @@
 import sys
 import os.path
 import logging
+import re
 from os.path import join as opj
 import swiftclient as sw
 
@@ -92,13 +93,18 @@ class NtpStorageGridFs (NtpStorage):
             file_id = self.gridfs.find_one({'filename':file_name})._id
             self.gridfs.delete(file_id)
 
-    def file_exists(self, file_name):
-        return self.gridfs.exists(filename=file_name)
+    def file_exists(self, file_name, no_ext=False):
+        if not no_ext:
+            return self.gridfs.exists(filename=file_name)
+        else:
+            rgx = re.compile("^" + file_name)
+            return self.gridfs.exists({'filename':rgx})
+
 
     def file_list(self, id_range=None):
         list = []
 #        for file in self.gridfs.list():
-        for file in self.gridfs.find(no_cursor_timeout=True):
+        for file in self.gridfs.find():
             if id_range is None or is_in_range(get_ntpid(file.name), id_range):
                 list.append(file.name)
         return list

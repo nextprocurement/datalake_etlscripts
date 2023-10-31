@@ -94,7 +94,6 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    incoming_col = db_lnk.db.get_collection('incoming')
 
     if args.verbose:
         logging.info("Connecting to storage...")
@@ -237,6 +236,7 @@ def main():
 
         n_delete = 0
         n_transfer = 0
+        n_error = 0
 
         if args.delete:
             for file in to_delete:
@@ -263,7 +263,8 @@ def main():
                 except Exception as e:
                     logging.debug(e)
                     logging.error(f"Error storing {file}")
-            logging.info(f"Transfer completed. {n_transfer} files transferred, {n_delete} files deleted")
+                    n_error += 1
+            logging.info(f"Transfer completed. {n_transfer} files transferred, {n_delete} files deleted, {n_error} errors found")
     else:
         logging.info(f"no action done (--check_only)")
 

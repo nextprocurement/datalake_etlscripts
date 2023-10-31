@@ -30,8 +30,10 @@ NIE_REGEX = r'^[XYZ]\d{7,8}[A-Z]$'
 FIELDS = ['Nombre', 'Ubicacion_organica', '']
 
 def valid_nif(a):
-    a = a.upper().replace('-','')
-    return re.match(CIF_REGEX, a) or re.match(DNI_REGEX, a) or re.match(NIE_REGEX, a)
+    a = a.upper().replace('-','').replace(' ','').replace('.', '')
+    if re.match(CIF_REGEX, a) or re.match(DNI_REGEX, a) or re.match(NIE_REGEX, a):
+        return a
+    return False
 
 
 def main():
@@ -111,8 +113,9 @@ def main():
             else:
                 contracting_party['other_ids'] = []
                 for item in ntp_doc.data['ID']:
-                    if valid_nif(item):
-                        contracting_party['nif'] = item.replace('-','')
+                    nif_ok = valid_nif(item)
+                    if nif_ok:
+                        contracting_party['nif'] = nif_ok
                     else:
                         contracting_party['other_ids'].append(item)
 
@@ -120,7 +123,7 @@ def main():
             if k in FIELDS or 'LocatedContractingParty' in k:
                 contracting_party[k] = ntp_doc.data[k]
 
-        if 'nif' in contracting_party and valid_nif(contracting_party['nif']):
+        if 'nif' in contracting_party:
             contracting_party['_id'] = contracting_party['nif'].replace('-', '')
             try:
                 contract_col.update_one(
@@ -142,14 +145,15 @@ def main():
 
         if 'Identificador' in ntp_doc.data:
             for i, nif in enumerate(ntp_doc.data['Identificador']):
-                if valid_nif(nif):
+                nif_ok = valid_nif(nif)
+                if nif_ok:
                     nif = nif.replace('-', '')
-                    adjudicatario['_id'] = nif
-                    adjudicatario['nif'] = nif
+                    adjudicatario['_id'] = nif_ok
+                    adjudicatario['nif'] = nif_ok
                     adjudicatario['Nombre'] = ntp_doc.data['Nombre_Adjudicatario'][i]
                     try:
                         adjud_col.update_one(
-                            {'_id': nif},
+                            {'_id': nif_ok},
                             {'$set': adjudicatario},
                             upsert=True
                         )

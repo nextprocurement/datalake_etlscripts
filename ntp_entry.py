@@ -180,7 +180,8 @@ class NtpEntry:
             replace=False,
             scan_only=False,
             allow_redirects=False,
-            verify_ca=True
+            verify_ca=True,
+            skip_early=False
     ):
         ''' Retrieves and stores document accounting for possible redirections'''
         if ':' in field:
@@ -189,6 +190,13 @@ class NtpEntry:
         else:
             base = field
             url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
+        if skip_early:
+            if storage.type != 'gridfs':
+                logging.error(f"--skip_early only available for GridFS storage  (yet)")
+                sys.exit(1)
+            file_name_root = self.get_file_name(field, '')
+            if storage.file_exists(file_name_root, no_ext=True):
+                return SKIPPED, field
         try:
             logging.debug(f"IP: {','.join(_get_ips(url))}")
             response = requests.get(
@@ -265,17 +273,13 @@ class NtpEntry:
             if k == '_id':
                 continue
             if k in other.data:
-                if self.data[k] == other.data[k]:
-                    continue
-                else:
+                if self.data[k] != other.data[k]:
                     modif[k] = (self.data[k], other.data[k])
             else:
                 miss[k] = self.data[k]
 
         for k in other.data:
-            if k in self.data:
-                continue
-            else:
+            if k not in self.data:
                 new[k] = other.data[k]
         return (new, modif, miss)
 

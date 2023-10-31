@@ -48,7 +48,7 @@ def main():
     with open(args.config, 'r')  as config_file:
         config = load(config_file, Loader=CLoader)
 
-    logging.info("Connecting to MongoDB")
+    logging.info(f"Connecting to MongoDB at {config['MONGODB_HOST']}")
 
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
@@ -78,10 +78,21 @@ def main():
         if args.fin is not None:
             query.append({'_id':{'$lte': args.fin}})
         query = {'$and': query}
-
+    PLACE_IDS = [
+        result['id']
+        for result in incoming_col.find(query, projection={'id':1, '_id':0})
+    ]
     LICS = {}
     STATS = {}
-    for doc in list(incoming_col.aggregate([{'$group':{'_id':'$id','versions':{'$addToSet':"$_id"}}}])):
+    for doc in list(incoming_col.aggregate([
+        {'$match' : {'id': {'$in': PLACE_IDS}}},
+        {
+        '$group':
+            {
+                '_id':'$id',
+                'versions': {'$addToSet': {'_id':"$_id", 'updated': "$updated"}}
+            }
+        }], allowDiskUse=True)):
         if len(doc['versions']) == 1:
             continue
         place_id = os.path.basename(doc['_id'])
@@ -103,11 +114,13 @@ def main():
     num_del = 0
     for place_id in LICS:
         if args.verbose:
-            print(f"Processing place_id {place_id} with {len(LICS[place_id]) - 1} updates ")
-        base_id = sorted(LICS[place_id])[0]
+            logging.info(f"Processing place_id {place_id} with {len(LICS[place_id]) - 1} updates ")
+        list_ids = sorted(LICS[place_id], key=lambda x: x['updated'])
+        base_id = list_ids[0]['_id']
         base_doc = ntp.NtpEntry()
         base_doc.load_from_db(incoming_col, base_id)
-        for id in LICS[place_id]:
+        for doc in LICS[place_id]:
+            id = doc['_id']
             if id == base_id:
                 continue
             new_doc = ntp.NtpEntry()
@@ -123,11 +136,22 @@ def main():
             if miss:
                 patch['del'] = miss
                 num_del += 1
+            if not new and not modif and not miss:
+                logging.warning(f"Potential duplicate {base_id}, {id}")
             num_ids += 1
             patch_col.update_one(
                 {'_id': place_id},
                 {
-                    '$set': {'_id': place_id, 'base_id': base_id, 'update': {'id': id,'patched_values': patch}}
+                    '$set': {
+                        '_id': place_id,
+                        'base_id': base_id
+                    },
+                    '$addToSet': {
+                        'update': {
+                            'id': id,
+                            'patched_values': patch
+                        }
+                    }
                 },
                 upsert=True
             )
