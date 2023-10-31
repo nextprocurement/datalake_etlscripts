@@ -6,6 +6,7 @@ import os.path
 import logging
 import requests
 import numpy as np
+from unidecode import unidecode
 from urllib.parse import urlparse, unquote
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -69,8 +70,8 @@ def parse_parquet(pd_data_row, new_cols):
             else:
                 new_data[new_cols.loc[col]['DBFIELD']] = pd_data_row[col]
         except KeyError:
-            mod_col = col.replace('ContractFolderStatus - ', '').replace(' - ', '_')
-            logging.error(f'"{col}"\t"{mod_col}"\"string"\n')
+            mod_col = col.replace('ContractFolderStatus - ', '').replace(' - ', '_').replace(' ', '_').replace(r'[\(\)]', '')
+            logging.error(f'"{col}"\t"{unidecode(mod_col)}"\t"string"\n')
     # if r:
     #    print(new_data,"\n")
     return new_data
