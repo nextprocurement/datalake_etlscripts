@@ -66,9 +66,6 @@ def main():
         incoming_col = db_lnk.db.get_collection('place')
         clean_col = db_lnk.db.get_collection('place_clean')
 
-    if args.verbose:
-        logging.info("Getting ids...")
-
     for ntp_id in (args.id, args.ini, args.fin):
         if ntp_id is not None and not ntp.check_ntp_id(ntp_id):
             logging.error(f'{ntp_id} is not a valid ntp id')
@@ -84,33 +81,48 @@ def main():
             query.append({'_id':{'$lte': args.fin}})
         query = {'$and': query}
 
-    PLACE_IDS = [
-        result['id']
-        for result in incoming_col.find(query, projection={'id':1, '_id':0})
-    ]
-    LICS = {}
-    STATS = {}
-    for doc in list(incoming_col.aggregate([
-        {'$match' : {'id': {'$in': PLACE_IDS}}},
-        {
-        '$group':
-            {
-                '_id':'$id',
-                'versions': {'$addToSet': {'_id':"$_id", 'updated': "$updated"}}
-            }
-        }], allowDiskUse=True)):
-        if len(doc['versions']) == 1:
+    chunk_size = 100000
+    current = 0
+    finished = False
+    logging.info("Grouping documents according to place id")
+    while not finished:
+        logging.info(f"Processing {current} to {current + chunk_size}")
+        PLACE_IDS = [
+            result['id']
+            for result in incoming_col.find(
+                query,
+                projection={'id':1, '_id':0},
+                skip=current,
+                limit= chunk_size
+                )
+        ]
+        finished = not PLACE_IDS
+        if finished:
             continue
-        place_id = os.path.basename(doc['_id'])
-        LICS[place_id] = doc['versions']
-        if len(doc['versions']) in STATS:
-            STATS[len(doc['versions'])] += 1
-        else:
-            STATS[len(doc['versions'])] = 1
+        current += chunk_size
+        LICS = {}
+        STATS = {}
+
+        for doc in incoming_col.aggregate([
+            {'$match' : {'id': {'$in': PLACE_IDS}}},
+            {
+            '$group':
+                {
+                    '_id':'$id',
+                    'versions': {'$addToSet': {'_id':"$_id", 'updated': "$updated"}}
+                }
+            }], allowDiskUse=True):
+            place_id = os.path.basename(doc['_id'])
+            LICS[place_id] = doc['versions']
+            if len(doc['versions']) in STATS:
+                STATS[len(doc['versions'])] += 1
+            else:
+                STATS[len(doc['versions'])] = 1
+
     logging.info(f"Found versioned entries: {[str(k) + ':' + str(v) for k,v in sorted (STATS.items())]}")
 
     logging.info("Dropping patch collection")
-    patch_col.delete_many({})
+    clean_col.delete_many({})
 
     logging.info("Start processing")
     num_ids = 0
