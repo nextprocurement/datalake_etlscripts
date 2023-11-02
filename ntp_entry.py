@@ -50,7 +50,7 @@ def get_new_dbfield(col):
     mod_col = col.replace('ContractFolderStatus - ', '').replace(' - ', '_').replace(' ', '_')
     if '_(' in mod_col:
         m = re.search(r'(.*)_\((.*)\)', mod_col)
-        mod_col = f"{m[2]}__{m[1]}"
+        mod_col = f"{m[2]}/{m[1]}"
     return unidecode(mod_col)
 
 def parse_parquet(pd_data_row, new_cols):
@@ -63,7 +63,19 @@ def parse_parquet(pd_data_row, new_cols):
     r = False
     for col in pd_data_row:
         if isinstance(pd_data_row[col], np.ndarray):
-            pd_data_row[col] = list(pd_data_row[col])
+            tmp_list = []
+            for item in pd_data_row[col].tolist():
+                if item.startswith('['):
+                    new_list = eval(item) # Transform string list into actual list
+                    tmp_list.append(new_list)
+                else:
+                    tmp_list.append(item)
+            if len(tmp_list) == 1:
+                tmp_list = tmp_list[0] # Remove useless list level for single item list.
+            pd_data_row[col] = tmp_list
+            if pd_data_row[col] == 'nan':
+                pd_data_row[col] = ''
+
         elif pd.isna(pd_data_row[col]):
             pd_data_row[col] = ''
 
