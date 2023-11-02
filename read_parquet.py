@@ -31,7 +31,7 @@ def main():
     parser.add_argument('--config', action='store', help="Configuration file", default="secrets.yml")
     parser.add_argument('--debug', action='store_true', help="Add Debug information")
     parser.add_argument('-v','--verbose', action='store_true', help="Add Extra information")
-    parser.add_argument('--col', action='store', help="outsiders|minors|insiders")
+    parser.add_argument('--group', action='store', help="outsiders|minors|insiders", required=True)
     parser.add_argument('--upsert', action='store_true', help="update existing atom or insert a new one")
 
     parser.add_argument('codes_file', help="Columns sanitized names")
@@ -51,7 +51,7 @@ def main():
     logging.info(f"Configuration: {args.config}")
     logging.info(f"Parquet:       {args.pkt_file}")
     logging.info(f"Codes:         {args.codes_file}")
-    logging.info(f"Type:          {args.type}")
+    logging.info(f"Group:         {args.group}")
 
     logging.info("Connecting MongoDB")
     db_lnk = Mongo_db(
@@ -63,23 +63,28 @@ def main():
         connect_db=True
     )
 
-    incoming_col = db_lnk.db.get_collection(args.col)
+    if args.group in ['outsiders', 'insiders']:
+        incoming_col = db_lnk.db.get_collection('place')
+    else:
+        incoming_col = db_lnk.db.get_collection('place_minors')
 
     data_table = pd.read_parquet(args.pkt_file, use_nullable_dtypes=True)
     new_cols = pd.read_csv(args.codes_file, sep='\t', index_col='ORIGINAL')
 
-    if args.type=='mayores':
+    if args.group in ['outsiders', 'insiders']:
         id_num = 0
     else:
         id_num = 10000000
+
     if args.drop:
         logging.info("Dropping previously stored data")
         incoming_col.drop()
     else:
-        if args.type == 'mayores':
+        if args.group in ['outsiders', 'insiders']:
             cond = {'_id': {'$regex': 'ntp0'}}
         else:
             cond = {'_id': {'$regex': 'ntp1'}}
+
         max_id_c = incoming_col.aggregate(
                     [
                         {'$match': cond},
