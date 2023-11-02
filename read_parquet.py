@@ -31,7 +31,7 @@ def main():
     parser.add_argument('--config', action='store', help="Configuration file", default="secrets.yml")
     parser.add_argument('--debug', action='store_true', help="Add Debug information")
     parser.add_argument('-v','--verbose', action='store_true', help="Add Extra information")
-    parser.add_argument('--type', action='store', default='mayores', help="mayores|menores")
+    parser.add_argument('--col', action='store', help="outsiders|minors|insiders")
     parser.add_argument('--upsert', action='store_true', help="update existing atom or insert a new one")
 
     parser.add_argument('codes_file', help="Columns sanitized names")
@@ -62,10 +62,8 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    if args.type == 'mayores':
-        incoming_col = db_lnk.db.get_collection('place')
-    else:
-        incoming_col = db_lnk.db.get_collection('place_menores')
+
+    incoming_col = db_lnk.db.get_collection(args.col)
 
     data_table = pd.read_parquet(args.pkt_file, use_nullable_dtypes=True)
     new_cols = pd.read_csv(args.codes_file, sep='\t', index_col='ORIGINAL')
