@@ -1,5 +1,5 @@
 "ORIGINAL"	"DBFIELD"	"TYPE"
-"Actividad (Entidad Adjudicadora)"	"Entidad_Adjudicadorai/Actividad"	"string"
+"Actividad (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Actividad"	"string"
 "Admisión de Variantes (Condiciones de Licitación)"	"Condiciones_de_Licitacion/Admision_de_Variantes"	"string"
 "Agencia (Publicaciones oficiales)"	"Publicaciones_oficiales/Agencia"	"string"
 "Anexos a los pliegos (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Anexos_a_los_pliegos"	"string"
