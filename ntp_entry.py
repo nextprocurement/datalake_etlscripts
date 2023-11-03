@@ -124,6 +124,7 @@ class NtpEntry:
         self.ntp_order = 0
         self.ntp_id = ''
         self.data = {}
+        self.data['data_model'] = 'v2023'
 
     def load_data(self, ntp_order, data):
         self.ntp_order = ntp_order
@@ -137,11 +138,20 @@ class NtpEntry:
     def order_from_id(self):
         self.ntp_order = parse_ntp_id(self.ntp_id)
 
+    def _find_previous_doc(self, col):
+        found = False
+        old_doc = {}
+        for vers in col.find({'id': self.data['id']}):
+            if not isinstance(vers['updated'], str):
+                vers['updated'] = vers['updated'].strftime('%Y-%m-%d %H:%M:%S.%f+00:00')
+            found = vers['updated'] == self.data['updated']
+            if found:
+                old_doc = vers
+                break
+        return old_doc
     def commit_to_db(self, col, upsert=False):
         if upsert:
-            old_doc = col.find_one(
-                {'id': self.data['id'], 'updated': self.data['updated']}
-            )
+            old_doc = self._find_previous_doc(col)
             if old_doc and old_doc['_id']:
                 logging.info(f"Updating previous version {old_doc['_id']}")
                 self.data['_id'] = old_doc['_id']

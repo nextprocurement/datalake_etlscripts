@@ -53,7 +53,7 @@ def main():
     logging.info(f"Codes:         {args.codes_file}")
     logging.info(f"Group:         {args.group}")
 
-    logging.info("Connecting MongoDB")
+    logging.info(f"Connecting MongoDB at {config['MONGODB_HOST']}")
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
         'nextprocurement',
@@ -64,9 +64,9 @@ def main():
     )
 
     if args.group in ['outsiders', 'insiders']:
-        incoming_col = db_lnk.db.get_collection('place')
+        incoming_col = db_lnk.db.get_collection('place_new')
     else:
-        incoming_col = db_lnk.db.get_collection('place_minors')
+        incoming_col = db_lnk.db.get_collection('place_menores_new')
 
     data_table = pd.read_parquet(args.pkt_file, use_nullable_dtypes=True)
     new_cols = pd.read_csv(args.codes_file, sep='\t', index_col='ORIGINAL')
