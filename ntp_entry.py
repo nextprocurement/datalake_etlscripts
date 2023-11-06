@@ -124,6 +124,7 @@ class NtpEntry:
         self.ntp_order = 0
         self.ntp_id = ''
         self.data = {}
+        self.data['data_model'] = 'v2023'
 
     def load_data(self, ntp_order, data):
         self.ntp_order = ntp_order
