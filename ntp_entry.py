@@ -137,11 +137,27 @@ class NtpEntry:
     def order_from_id(self):
         self.ntp_order = parse_ntp_id(self.ntp_id)
 
+    def _find_previous_doc(self, col):
+            # old_doc = col.find_one(
+            #     {'id': self.data['id'], 'updated': self.data['updated']}
+            # )
+            found = False
+            old_doc = {}
+            for vers in col.find({'id': self.data['id']}):
+                found = vers['updated'] == self.data['updated']
+                print(vers['updated'], self.data['updated'], found)
+                if found:
+                    old_doc = vers
+                    break
+            sys.exit()
+            return old_doc
+
     def commit_to_db(self, col, upsert=False):
         if upsert:
-            old_doc = col.find_one(
-                {'id': self.data['id'], 'updated': self.data['updated']}
-            )
+            # old_doc = col.find_one(
+            #     {'id': self.data['id'], 'updated': self.data['updated']}
+            # )
+            old_doc = self._find_previous_doc(col)
             if old_doc and old_doc['_id']:
                 logging.info(f"Updating previous version {old_doc['_id']}")
                 self.data['_id'] = old_doc['_id']
