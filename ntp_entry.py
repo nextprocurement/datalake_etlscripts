@@ -148,20 +148,35 @@ class NtpEntry:
         old_doc = {}
         for vers in col.find({'id': self.data['id']}):
             if isinstance(vers['updated'], datetime):
-                vers['updated'] = vers['updated'].strftime('%Y-%m-%d %H:%M:%S.%f+00:00')
+                vers['updated'] = vers['updated'].strftime('%Y-%m-%d %H:%M:%S')
             vl = isinstance(vers['updated'], list)
             nl = isinstance(self.data['updated'], list)
-            logging.debug(f"{vers['updated']} {self.data['updated']}")
-            if vl and nl or not vl and not nl:
-                found = vers['updated'] == self.data['updated']
-            elif nl:
-                found = vers['updated'] in self.data['updated']
+            # Comparison limited to YYYY-MM-DD HH:MM:SS to avoid format issues
+            if vl:
+                vers_tmp = [item[0:19] for item in vers['updated']]
             else:
-                found = self.data['updated'] in vers['updated']
+                vers_tmp = vers['updated'][0:19]
+
+            if nl:
+                new_tmp = [item[0:19] for item in self.data['updated']]
+            else:
+                new_tmp = vers['updated'][0:19]
+
+            if vl and nl or not vl and not nl:
+                found = vers_tmp == new_tmp
+            elif nl:
+                found = vers_tmp in new_tmp
+            else:
+                found = new_tmp in vers_tmp
+
+            logging.debug(f"{vers['updated']} {self.data['updated']} {found}")
+            logging.debug(f"{vers_tmp} {new_tmp} {found}")
+
             if found:
                 old_doc = vers
                 break
         return old_doc
+
     def commit_to_db(self, col, upsert=False):
         if upsert:
             old_doc = self._find_previous_doc(col)
@@ -181,7 +196,7 @@ class NtpEntry:
             for k in self.data:
                 logging.debug(f"{k} {self.data[k]} {type(self.data[k])}")
             logging.error(e)
-            sys.exit(1)
+            #sys.exit(1)
 
         return self.ntp_order
 
