@@ -19,7 +19,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Summary')
     parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
-    parser.add_argument('--type', action='store', default='mayores', help='Mayores (no menores) | menores')
+    parser.add_argument('--group', action='store', help="outsiders|minors|insiders", required=True)
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
 
@@ -45,22 +45,21 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    if args.type == 'menores':
-        data_store = 'place_menores'
+    if args.group in ['outsiders', 'insiders']:
+        incoming_col = db_lnk.db.get_collection('place_new')
     else:
-        data_store = 'place'
-
-    incoming_col = db_lnk.db.get_collection(data_store)
+        incoming_col = db_lnk.db.get_collection('place_menores_new')
 
     data = {}
     data['total_documents'] = incoming_col.estimated_document_count()
     aggregated_counts = [
-        'Tipo_Contrato',
-        'TenderingProcess_ContractingSystemCode',
-        'TenderingTerms_Language_ID',
-        'LocatedContractingParty_ContractingPartyTypeCode',
-        'LocatedContractingParty_Country_Name',
-        'ProcurementProject_RealizedLocation_Country_Name'
+        'Datos_Generales_del_Expediente/Tipo_Contrato',
+        'Proceso_de_licitacion/Sistema_de_contratacion',
+        'Proceso_de_licitacion/Idioma_de_Presentacion_de_Oferta',
+        'Entidad_Adjudicadora/Tipo_de_Administracion',
+        'Entidad_Adjudicadora/Pais',
+        'Lugar_de_ejecucion_del_Lote/Pais',
+        'Lugar_de_ejecucion/Pais'
     ]
 
     for field in aggregated_counts:
