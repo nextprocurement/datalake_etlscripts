@@ -6,6 +6,7 @@ import os.path
 import logging
 import requests
 import numpy as np
+from datetime import datetime
 from unidecode import unidecode
 from urllib.parse import urlparse, unquote
 import pandas as pd
@@ -66,7 +67,12 @@ def parse_parquet(pd_data_row, new_cols):
             tmp_list = []
             for item in pd_data_row[col].tolist():
                 if item.startswith('['):
-                    new_list = eval(item) # Transform string list into actual list
+                    try:
+                        new_list = eval(item) # Transform string list into actual list
+                    except Exception as e:
+                        logging.error(e)
+                        logging.error(item)
+                        new_list = item
                     tmp_list.append(new_list)
                 else:
                     tmp_list.append(item)
@@ -78,7 +84,6 @@ def parse_parquet(pd_data_row, new_cols):
 
         elif pd.isna(pd_data_row[col]):
             pd_data_row[col] = ''
-
         try:
             if new_cols.loc[col]['DBFIELD'] in new_data:
                 r = True
@@ -93,6 +98,7 @@ def parse_parquet(pd_data_row, new_cols):
             logging.error(f'"{col}"\t"{mod_col}"\t"string"\n')
     # if r:
     #    print(new_data,"\n")
+        new_data['data_model'] = 'v2023'
     return new_data
 
 
@@ -124,7 +130,6 @@ class NtpEntry:
         self.ntp_order = 0
         self.ntp_id = ''
         self.data = {}
-        self.data['data_model'] = 'v2023'
 
     def load_data(self, ntp_order, data):
         self.ntp_order = ntp_order
@@ -139,19 +144,38 @@ class NtpEntry:
         self.ntp_order = parse_ntp_id(self.ntp_id)
 
     def _find_previous_doc(self, col):
-            # old_doc = col.find_one(
-            #     {'id': self.data['id'], 'updated': self.data['updated']}
-            # )
-            found = False
-            old_doc = {}
-            for vers in col.find({'id': self.data['id']}):
-                found = vers['updated'] == self.data['updated']
-                print(vers['updated'], self.data['updated'], found)
-                if found:
-                    old_doc = vers
-                    break
-            sys.exit()
-            return old_doc
+        found = False
+        old_doc = {}
+        for vers in col.find({'id': self.data['id']}):
+            if isinstance(vers['updated'], datetime):
+                vers['updated'] = vers['updated'].strftime('%Y-%m-%d %H:%M:%S')
+            vl = isinstance(vers['updated'], list)
+            nl = isinstance(self.data['updated'], list)
+            # Comparison limited to YYYY-MM-DD HH:MM:SS to avoid format issues
+            if vl:
+                vers_tmp = [item[0:19] for item in vers['updated']]
+            else:
+                vers_tmp = vers['updated'][0:19]
+
+            if nl:
+                new_tmp = [item[0:19] for item in self.data['updated']]
+            else:
+                new_tmp = vers['updated'][0:19]
+
+            if vl and nl or not vl and not nl:
+                found = vers_tmp == new_tmp
+            elif nl:
+                found = vers_tmp in new_tmp
+            else:
+                found = new_tmp in vers_tmp
+
+            logging.debug(f"{vers['updated']} {self.data['updated']} {found}")
+            logging.debug(f"{vers_tmp} {new_tmp} {found}")
+
+            if found:
+                old_doc = vers
+                break
+        return old_doc
 
     def commit_to_db(self, col, upsert=False):
         if upsert:
@@ -175,7 +199,7 @@ class NtpEntry:
             for k in self.data:
                 logging.debug(f"{k} {self.data[k]} {type(self.data[k])}")
             logging.error(e)
-            sys.exit(1)
+            #sys.exit(1)
 
         return self.ntp_order
 

@@ -1,188 +1,240 @@
-"ORIGINAL"	"DBFIELD"	"TYPE"
-"El adjudicatario es una PYME (Adjudicatario)"	"Adjudicatario/El_adjudicatario_es_una_PYME"	"string"
-"Identificador (Adjudicatario)"	"Adjudicatario/Identificador"	"string"
-"ContractFolderStatus - TenderResult - WinningParty - PartyIdentification - IDschemeName"	"Adjudicatario/IDschemeName"	"string"
-"Nombre del adjudicatario (Adjudicatario)"	"Adjudicatario/Nombre_del_adjudicatario"	"string"
-"Nombre del Adjudicatario"	"Adjudicatario/Nombre_del_adjudicatario"	"string"
-"Código de Subentidad Nacional"	"Codigo_de_Subentidad_Nacional"	"string"
-"Admisión de Variantes (Condiciones de Licitación)"	"Condiciones_de_Licitacion/Admision_de_Variantes"	"string"
-"Descripción de Programas de Financiación (Condiciones de Licitación)"	"Condiciones_de_Licitacion/Descripcion_de_Programas_de_Financiacion"	"string"
-"Especificar personal y cualificación Profesional (CCVV) (Condiciones de Licitación)"	"Condiciones_de_Licitacion/Especificar_personal_y_cualificacion_Profesional/CCVV"	"string"
-"Fórmula de Revisión de Precios (Condiciones de Licitación)"	"Condiciones_de_Licitacion/Formula_de_Revision_de_Precios"	"string"
-"Programas de Financiación (Condiciones de Licitación)"	"Condiciones_de_Licitacion/Programas_de_Financiacion"	"string"
-"Descripción (Condiciones de Subcontratación)"	"Condiciones_de_Subcontratacion/Descripcion"	"string"
-"Porcentaje de Subcontratación (Condiciones de Subcontratación)"	"Condiciones_de_Subcontratacion/Porcentaje_de_Subcontratacion"	"string"
-"Descripción (Criterio de Adjudicación)"	"Criterio_de_Adjudicacion/Descripcion"	"string"
-"Ponderación (Criterio de Adjudicación)"	"Criterio_de_Adjudicacion/Ponderacion"	"string"
-"Clasificación CPV (Datos Generales del Expediente del Lote)"	"Datos_Generales_del_Expediente_del_Lote/Clasificacion_CPV"	"string"
-"ID del Lote (Datos Generales del Expediente del Lote)"	"Datos_Generales_del_Expediente_del_Lote/ID_del_Lote"	"string"
-"Objeto del Lote (Datos Generales del Expediente del Lote)"	"Datos_Generales_del_Expediente_del_Lote/Objeto_del_Lote"	"string"
-"Presupuesto base con impuestos (Datos Generales del Expediente del Lote)"	"Datos_Generales_del_Expediente_del_Lote/Presupuesto_base_con_impuestos"	"string"
-"Presupuesto base sin impuestos (Datos Generales del Expediente del Lote)"	"Datos_Generales_del_Expediente_del_Lote/Presupuesto_base_sin_impuestos"	"string"
-"Anexos a los pliegos (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Anexos_a_los_pliegos/Archivo"	"string"
-"Anexos a los pliegos (Hash) (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Anexos_a_los_pliegos/Hash"	"string"
-"Anexos a los pliegos (URI) (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Anexos_a_los_pliegos/URI"	"string"
-"Clasificación CPV (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Clasificacion_CPV"	"string"
-"Clasificación CPV"	"Datos_Generales_del_Expediente/Clasificacion_CPV"	"string"
-"Estado (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Estado"	"string"
-"Estado"	"Datos_Generales_del_Expediente/Estado"	"string"
-"Número de Expediente (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Numero_de_Expediente"	"string"
-"Número de Expediente"	"Datos_Generales_del_Expediente/Numero_de_Expediente"	"string"
-"Objeto del Contrato (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Objeto_del_Contrato"	"string"
-"Objeto del Contrato"	"Datos_Generales_del_Expediente/Objeto_del_Contrato"	"string"
-"Plazo de Ejecución (Comienzo) (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Comienzo"	"string"
-"Plazo de Ejecución (Comienzo)"	"Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Comienzo"	"string"
-"Plazo de Ejecución (Duración) (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Duracion"	"string"
-"Plazo de Ejecución (Duración)"	"Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Duracion"	"string"
-"Plazo de Ejecución (Fin) (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Fin"	"string"
-"Plazo de Ejecución (Fin)"	"Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Fin"	"string"
-"Pliego de cláusulas administrativas (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Pliego_de_clausulas_administrativas/Archivo"	"string"
-"Pliego de cláusulas administrativas (Hash) (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Pliego_de_clausulas_administrativas/Hash"	"string"
-"Pliego de cláusulas administrativas"	"Datos_Generales_del_Expediente/Pliego_de_clausulas_administrativas/Hash"	"string"
-"Pliego de cláusulas administrativas (URI) (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Pliego_de_clausulas_administrativas/URI"	"string"
-"Pliego de cláusulas administrativas (URI)"	"Datos_Generales_del_Expediente/Pliego_de_clausulas_administrativas/URI"	"string"
-"Pliego de Prescripciones técnicas (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Pliego_de_Prescripciones_tecnicas/Archivo"	"string"
-"Pliego de Prescripciones técnicas (Hash) (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Pliego_de_Prescripciones_tecnicas/Hash"	"string"
-"Pliego de Prescripciones técnicas"	"Datos_Generales_del_Expediente/Pliego_de_Prescripciones_tecnicas/Hash"	"string"
-"Pliego de Prescripciones técnicas (URI) (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Pliego_de_Prescripciones_tecnicas/URI"	"string"
-"Pliego de Prescripciones técnicas (URI)"	"Datos_Generales_del_Expediente/Pliego_de_Prescripciones_tecnicas/URI"	"string"
-"Presupuesto base con impuestos (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Presupuesto_base_con_impuestos"	"string"
-"Presupuesto base sin impuestos (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Presupuesto_base_sin_impuestos"	"string"
-"Presupuesto base sin impuestos"	"Datos_Generales_del_Expediente/Presupuesto_base_sin_impuestos"	"string"
-"Subtipo (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Subtipo"	"string"
-"Tipo de Contrato (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Tipo_de_Contrato"	"string"
-"Tipo de Contrato"	"Datos_Generales_del_Expediente/Tipo_de_Contrato"	"string"
-"Valor estimado del contrato (Datos Generales del Expediente)"	"Datos_Generales_del_Expediente/Valor_estimado_del_contrato"	"string"
-"Valor estimado del contrato"	"Datos_Generales_del_Expediente/Valor_estimado_del_contrato"	"string"
-"deleted_on"	"deleted_on"	"string"
-"Ubicación orgánica (2) (Entidad Adjudicadora Jerarquía)"	"Entidad_Adjudicadora_Jerarquia/Ubicacion_organica"	"string"
-"Ubicación orgánica (3) (Entidad Adjudicadora Jerarquía)"	"Entidad_Adjudicadora_Jerarquia/Ubicacion_organica"	"string"
-"Ubicación orgánica (4) (Entidad Adjudicadora Jerarquía)"	"Entidad_Adjudicadora_Jerarquia/Ubicacion_organica"	"string"
-"Ubicación orgánica (5) (Entidad Adjudicadora Jerarquía)"	"Entidad_Adjudicadora_Jerarquia/Ubicacion_organica"	"string"
-"Ubicación orgánica (6) (Entidad Adjudicadora Jerarquía)"	"Entidad_Adjudicadora_Jerarquia/Ubicacion_organica"	"string"
-"Ubicación orgánica (7) (Entidad Adjudicadora Jerarquía)"	"Entidad_Adjudicadora_Jerarquia/Ubicacion_organica"	"string"
-"Ubicación orgánica (8) (Entidad Adjudicadora Jerarquía)"	"Entidad_Adjudicadora_Jerarquia/Ubicacion_organica"	"string"
-"Ubicación orgánica (Entidad Adjudicadora)"	"Entidad_Adjudicadora_Jerarquia/Ubicacion_organica"	"string"
-"Actividad (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Actividad"	"string"
-"Calle (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Calle"	"string"
-"Código Postal (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Codigo_Postal"	"string"
-"Correo Electrónico (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Correo_Electronico"	"string"
-"Fax (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Fax"	"string"
-"ID (Entidad Adjudicadora)"	"Entidad_Adjudicadora/ID"	"string"
-"ContractFolderStatus - LocatedContractingParty - Party - PartyIdentification - IDschemeName"	"Entidad_Adjudicadora/IDschemeName"	"string"
-"Nombre (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Nombre"	"string"
-"Nombre para contacto (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Nombre_para_contacto"	"string"
-"País (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Pais"	"string"
-"Población (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Poblacion"	"string"
-"Sitio Web (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Sitio_Web"	"string"
-"Telefax (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Telefax"	"string"
-"Teléfono (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Telefono"	"string"
-"Tipo de Administración (Entidad Adjudicadora)"	"Entidad_Adjudicadora/Tipo_de_Administracion"	"string"
-"URL perfil de contratante (Entidad Adjudicadora)"	"Entidad_Adjudicadora/URL_perfil_de_contratante"	"string"
-"Opciones (Extensión de Contrato)"	"Extension_de_Contrato/Opciones"	"string"
-"Período de validez de las opciones (Extensión de Contrato)"	"Extension_de_Contrato/Periodo_de_validez_de_las_opciones"	"string"
-"Importe (Garantía Requerida Provisional)"	"Garantia_Requerida_Provisional/Importe"	"string"
-"Porcentaje de la garantía (Garantía Requerida Provisional)"	"Garantia_Requerida_Provisional/Porcentaje_de_la_garantia"	"string"
-"Tipo de Garantía (Garantía Requerida Provisional)"	"Garantia_Requerida_Provisional/Tipo_de_Garantia"	"string"
-"id"	"id"	"string"
-"ID"	"ID"	"string"
-"Identificador (+ Tipo: mod schemeName)"	"Identificador"	"string"
-"Importe total ofertado (con impuestos) (Importes de Adjudicación)"	"Importes_de_Adjudicacion/Importe_total_ofertado_con_impuestos"	"string"
-"Importe total ofertado (sin impuestos) (Importes de Adjudicación)"	"Importes_de_Adjudicacion/Importe_total_ofertado_sin_impuestos"	"string"
-"Importe total ofertado (sin impuestos)"	"Importes_de_Adjudicacion/Importe_total_ofertado_sin_impuestos"	"string"
-"Fecha de entrada en Vigor del Contrato (Información sobre el Contrato)"	"Informacion_sobre_el_Contrato/Fecha_de_entrada_en_Vigor_del_Contrato"	"string"
-"Fecha de Formalización (Información sobre el Contrato)"	"Informacion_sobre_el_Contrato/Fecha_de_Formalizacion"	"string"
-"Número de Contrato (Información sobre el Contrato)"	"Informacion_sobre_el_Contrato/Numero_de_Contrato"	"string"
-"Cantidad Máxima (Limitación del número de licitadores a los que se invitará)"	"Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Cantidad_Maxima"	"string"
-"Cantidad Mínima (Limitación del número de licitadores a los que se invitará)"	"Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Cantidad_Minima"	"string"
-"Criterios objetivos para la selección del número limitado de candidatos (Limitación del número de licitadores a los que se invitará)"	"Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Criterios_objetivos_para_la_seleccion_del_numero_limitado_de_candidatos"	"string"
-"El poder adjudicador se reserva el derecho de adjudicar contratos que combinen lotes (Limitación del número de licitadores a los que se invitará)"	"Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/El_poder_adjudicador_se_reserva_el_derecho_de_adjudicar_contratos_que_combinen_lotes"	"string"
-"Número de lotes a los que se debe ofertar (Limitación del número de licitadores a los que se invitará)"	"Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Numero_de_lotes_a_los_que_se_debe_ofertar"	"string"
-"Número de lotes a los que se puede ofertar (Limitación del número de licitadores a los que se invitará)"	"Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Numero_de_lotes_a_los_que_se_puede_ofertar"	"string"
-"Número máximo de lotes que se puede adjudicar a un licitador (Limitación del número de licitadores a los que se invitará)"	"Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Numero_maximo_de_lotes_que_se_puede_adjudicar_a_un_licitador"	"string"
-"Número previsto de operadores (Limitación del número de licitadores a los que se invitará)"	"Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Numero_previsto_de_operadores"	"string"
-"ContractFolderStatus - LocatedContractingParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - PartyName - Name"	"LocatedContractingParty_ParentLocatedParty_ParentLocatedParty_ParentLocatedParty_PartyName_Name"	"string"
-"ContractFolderStatus - LocatedContractingParty - ParentLocatedParty - ParentLocatedParty - PartyName - Name"	"LocatedContractingParty_ParentLocatedParty_ParentLocatedParty_PartyName_Name"	"string"
-"Lote"	"Lote"	"string"
-"Código de País (Lugar de ejecución del Lote)"	"Lugar_de_ejecucion_del_Lote/Codigo_de_Pais"	"string"
-"Código de Subentidad Territorial (Lugar de ejecución del Lote)"	"Lugar_de_ejecucion_del_Lote/Codigo_de_Subentidad_Territorial"	"string"
-"Código Postal (Lugar de ejecución del Lote)"	"Lugar_de_ejecucion_del_Lote/Codigo_Postal"	"string"
-"País (Lugar de ejecución del Lote)"	"Lugar_de_ejecucion_del_Lote/Pais"	"string"
-"Población (Lugar de ejecución del Lote)"	"Lugar_de_ejecucion_del_Lote/Poblacion"	"string"
-"Subentidad Territorial (Lugar de ejecución del Lote)"	"Lugar_de_ejecucion_del_Lote/Subentidad_Territorial"	"string"
-"Código de País (Lugar de ejecución)"	"Lugar_de_ejecucion/Codigo_de_Pais"	"string"
-"Código de Subentidad Territorial (Lugar de ejecución)"	"Lugar_de_ejecucion/Codigo_de_Subentidad_Territorial"	"string"
-"Código Postal (Lugar de ejecución)"	"Lugar_de_ejecucion/Codigo_Postal"	"string"
-"País (Lugar de ejecución)"	"Lugar_de_ejecucion/Pais"	"string"
-"Población (Lugar de ejecución)"	"Lugar_de_ejecucion/Poblacion"	"string"
-"Subentidad Territorial (Lugar de ejecución)"	"Lugar_de_ejecucion/Subentidad_Territorial"	"string"
-"Importe sin impuestos de la modificación (Modificaciones de contrato)"	"Modificaciones_de_contrato/Importe_sin_impuestos_de_la_modificacion"	"string"
-"Importe sin impuestos del contrato tras la modificación (Modificaciones de contrato)"	"Modificaciones_de_contrato/Importe_sin_impuestos_del_contrato_tras_la_modificacion"	"string"
-"Número de Contrato (Modificaciones de contrato)"	"Modificaciones_de_contrato/Numero_de_Contrato"	"string"
-"Número de la modificación (Modificaciones de contrato)"	"Modificaciones_de_contrato/Numero_de_la_modificacion"	"string"
-"Observaciones (Modificaciones de contrato)"	"Modificaciones_de_contrato/Observaciones"	"string"
-"Plazo de la Modificación (Modificaciones de contrato)"	"Modificaciones_de_contrato/Plazo_de_la_Modificacion"	"string"
-"Plazo total tras la modificación (Modificaciones de contrato)"	"Modificaciones_de_contrato/Plazo_total_tras_la_modificacion"	"string"
-"Nombre"	"Nombre"	"string"
-"Número de Licitadores Participantes"	"Numero_de_Licitadores_Participantes"	"string"
-"Documento publicado (FileName) (Otros documentos publicados)"	"Otros_documentos_publicados/Documento_publicado/FileName"	"string"
-"Documento publicado (ID) (Otros documentos publicados)"	"Otros_documentos_publicados/Documento_publicado/ID"	"string"
-"Documento publicado (URI) (Otros documentos publicados)"	"Otros_documentos_publicados/Documento_publicado/URI"	"string"
-"Fecha (Plazo de Obtención de Pliegos)"	"Plazo_de_Obtencion_de_Pliegos/Fecha"	"string"
-"Hora (Plazo de Obtención de Pliegos)"	"Plazo_de_Obtencion_de_Pliegos/Hora"	"string"
-"Fecha (Plazo de presentación de Oferta)"	"Plazo_de_presentacion_de_Oferta/Fecha"	"string"
-"Hora (Plazo de presentación de Oferta)"	"Plazo_de_presentacion_de_Oferta/Hora"	"string"
-"Observaciones (Plazo de presentación de Oferta)"	"Plazo_de_presentacion_de_Oferta/Observaciones"	"string"
-"Plazo de presentación de Oferta (Plazo de presentación de Oferta)"	"Plazo_de_presentacion_de_Oferta/Plazo_de_presentacion_de_Oferta"	"string"
-"Fecha (Plazo de Presentación de Solicitudes)"	"Plazo_de_Presentacion_de_Solicitudes/Fecha"	"string"
-"Hora (Plazo de Presentación de Solicitudes)"	"Plazo_de_Presentacion_de_Solicitudes/Hora"	"string"
-"Observaciones (Plazo de Presentación de Solicitudes)"	"Plazo_de_Presentacion_de_Solicitudes/Observaciones"	"string"
-"Presentación de Solicitudes (Fecha)"	"Presentacion_de_Solicitudes/Fecha"	"string"
-"Presentación de Solicitudes (Hora)"	"Presentacion_de_Solicitudes/Hora"	"string"
-"Directiva europea de aplicación (Proceso de licitación)"	"Proceso_de_licitacion/Directiva_europea_de_aplicacion"	"string"
-"Idioma de Presentación de Oferta (Proceso de licitación)"	"Proceso_de_licitacion/Idioma_de_Presentacion_de_Oferta"	"string"
-"La licitación hace uso de subasta electrónica (Proceso de licitación)"	"Proceso_de_licitacion/La_licitacion_hace_uso_de_subasta_electronica"	"string"
-"Presentación de la oferta (Proceso de licitación)"	"Proceso_de_licitacion/Presentacion_de_la_oferta/Numero"	"string"
-"Presentación de Oferta"	"Proceso_de_licitacion/Presentacion_de_la_oferta/Numero"	"string"
-"Presentación de Oferta (Fecha)"	"Proceso_de_licitacion/Presentacion_de_la_oferta/Fecha"	"string"
-"Presentación de Oferta (Hora)"	"Proceso_de_licitacion/Presentacion_de_la_oferta/Hora"	"string"
-"Presentación de Oferta (Observaciones)"	"Proceso_de_licitacion/Presentacion_de_la_oferta/Observaciones"	"string"
-"Sistema de contratación (Proceso de licitación)"	"Proceso_de_licitacion/Sistema_de_contratacion"	"string"
-"Tipo de procedimiento (Proceso de licitación)"	"Proceso_de_licitacion/Tipo_de_procedimiento"	"string"
-"Tipo de Procedimiento"	"Proceso_de_licitacion/Tipo_de_procedimiento"	"string"
-"Tipo de tramitación (Proceso de licitación)"	"Proceso_de_licitacion/Tipo_de_tramitacion"	"string"
-"ContractFolderStatus - ProcurementProjectLot - IDschemeName"	"ProcurementProjectLot_IDschemeName"	"string"
-"Agencia (Publicaciones oficiales)"	"Publicaciones_oficiales/Agencia"	"string"
-"Documento publicado (FileName) (Publicaciones oficiales)"	"Publicaciones_oficiales/Documento_publicado/FileName"	"string"
-"Documento publicado (URI) (Publicaciones oficiales)"	"Publicaciones_oficiales/Documento_publicado/URI"	"string"
-"Fecha de envío de anuncio al diario oficial (Publicaciones oficiales)"	"Publicaciones_oficiales/Fecha_de_envio_de_anuncio_al_diario_oficial"	"string"
-"Fecha de Publicación (Publicaciones oficiales)"	"Publicaciones_oficiales/Fecha_de_Publicacion"	"string"
-"Medio de Publicación (Publicaciones oficiales)"	"Publicaciones_oficiales/Medio_de_Publicacion"	"string"
-"Medio de Publicación"	"Publicaciones_oficiales/Medio_de_Publicacion"	"string"
-"Tipo de Anuncio (Publicaciones oficiales)"	"Publicaciones_oficiales/Tipo_de_Anuncio"	"string"
-"Tipo de Anuncio"	"Publicaciones_oficiales/Tipo_de_Anuncio"	"string"
-"Tipo de documento publicado (Publicaciones oficiales)"	"Publicaciones_oficiales/Tipo_de_documento_publicado"	"string"
-"Calificación empresarial solicitada (Requisitos de Participación)"	"Requisitos_de_Participacion/Calificacion_empresarial_solicitada/Codigo"	"string"
-"ContractFolderStatus_TenderingTerms_TendererQualificationRequest_RequiredBusinessClassificationScheme_ID (Unmatched)"	"Requisitos_de_participacion/Calificacion_empresarial_solicitada/ID"	"string"
-"Condiciones de admisión (código) (Requisitos de Participación)"	"Requisitos_de_Participacion/Condiciones_de_admision_codigo"	"string"
-"Criterio de evaluación económica-financiera (Requisitos de Participación)"	"Requisitos_de_Participacion/Criterio_de_evaluacion_economica-financiera/Descripcion"	"string"
-"Criterio de evaluación económica-financiera (código) (Requisitos de Participación)"	"Requisitos_de_Participacion/Criterio_de_evaluacion_economica-financiera/codigo"	"string"
-"Criterio de evaluación técnica (Requisitos de Participación)"	"Requisitos_de_Participacion/Criterio_de_evaluacion_tecnica/Descripcion"	"string"
-"Criterio de evaluación técnica (código) (Requisitos de Participación)"	"Requisitos_de_Participacion/Criterio_de_evaluacion_tecnica/codigo"	"string"
-"Solvencia Requerida (Requisitos de Participación)"	"Requisitos_de_Participacion/Solvencia_Requerida"	"string"
-"Título habilitante (Requisitos de Participación)"	"Requisitos_de_Participacion/Titulo_habilitante"	"string"
-"Fecha del acuerdo (Resultado del procedimiento)"	"Resultado_del_procedimiento/Fecha_del_acuerdo"	"string"
-"Lote (Resultado del procedimiento)"	"Resultado_del_procedimiento/Lote"	"string"
-"Motivación (Resultado del procedimiento)"	"Resultado_del_procedimiento/Motivacion"	"string"
-"Ofertas recibidas (Resultado del procedimiento)"	"Resultado_del_procedimiento/Ofertas_recibidas"	"string"
-"Precio de la oferta más alta (Resultado del procedimiento)"	"Resultado_del_procedimiento/Precio_de_la_oferta_mas_alta"	"string"
-"Precio de la oferta más baja (Resultado del procedimiento)"	"Resultado_del_procedimiento/Precio_de_la_oferta_mas_baja"	"string"
-"Resultado (Resultado del procedimiento)"	"Resultado_del_procedimiento/Resultado"	"string"
-"Resultado"	"Resultado_del_procedimiento/Resultado"	"string"
-"Se han excluido ofertas por ser anormalmente bajas (Resultado del procedimiento)"	"Resultado_del_procedimiento/Se_han_excluido_ofertas_por_ser_anormalmente_bajas"	"string"
-"Descripción (Subcontratación permitida)"	"Subcontratacion_permitida/Descripcion"	"string"
-"Porcentaje (Subcontratación permitida)"	"Subcontratacion_permitida/Porcentaje"	"string"
-"summary"	"summary"	"string"
-"title"	"title"	"string"
-"Ubicación orgánica"	"Ubicacion_organica"	"string"
-"updated"	"updated"	"string"
+ORIGINAL	DBFIELD	TYPE
+Ciudad (Adjudicatario)	Adjudicatario/Ciudad	string
+Código Postal (Adjudicatario)	Adjudicatario/Codigo_Postal	string
+El adjudicatario es una PYME (Adjudicatario)	Adjudicatario/El_adjudicatario_es_una_PYME	string
+El adjudicatario es una UTE (Adjudicatario)	Adjudicatario/El_adjudicatario_es_una_UTE	string
+Identificador (Adjudicatario)	Adjudicatario/Identificador	string
+Identificador de país (Adjudicatario)	Adjudicatario/Identificador_de_pais	string
+ContractFolderStatus - TenderResult - WinningParty - PartyIdentification - IDschemeName	Adjudicatario/IDschemeName	string
+Nombre del adjudicatario (Adjudicatario)	Adjudicatario/Nombre_del_adjudicatario	string
+Nombre del Adjudicatario	Adjudicatario/Nombre_del_adjudicatario	string
+País (Adjudicatario)	Adjudicatario/Pais	string
+Código de Subentidad Nacional	Codigo_de_Subentidad_Nacional	string
+Admisión de Variantes (Condiciones de Licitación)	Condiciones_de_Licitacion/Admision_de_Variantes	string
+Descripción de Programas de Financiación (Condiciones de Licitación)	Condiciones_de_Licitacion/Descripcion_de_Programas_de_Financiacion	string
+Especificar personal y cualificación Profesional (CCVV) (Condiciones de Licitación)	Condiciones_de_Licitacion/Especificar_personal_y_cualificacion_Profesional/CCVV	string
+Fórmula de Revisión de Precios (Condiciones de Licitación)	Condiciones_de_Licitacion/Formula_de_Revision_de_Precios	string
+Programas de Financiación (Condiciones de Licitación)	Condiciones_de_Licitacion/Programas_de_Financiacion	string
+Descripción (Condiciones de Subcontratación)	Condiciones_de_Subcontratacion/Descripcion	string
+Porcentaje de Subcontratación (Condiciones de Subcontratación)	Condiciones_de_Subcontratacion/Porcentaje_de_Subcontratacion	string
+Código de la condición (Condiciones especiales de ejecución del contrato)	Condiciones_especiales_de_ejecucion_del_contrato/Codigo_de_la_condicion	string
+Descripción de la condición (Condiciones especiales de ejecución del contrato)	Condiciones_especiales_de_ejecucion_del_contrato/Descripcion_de_la_condicion	string
+Nombre de la condición (Condiciones especiales de ejecución del contrato)	Condiciones_especiales_de_ejecucion_del_contrato/Nombre_de_la_condicion	string
+Descripción (Criterio de Adjudicación del Lote)	Criterio_de_Adjudicacion_del_Lote/Descripcion	string
+Note (Criterio de Adjudicación del Lote)	Criterio_de_Adjudicacion_del_Lote/Nota	string
+Ponderación (Criterio de Adjudicación del Lote)	Criterio_de_Adjudicacion_del_Lote/Ponderacion	string
+Subtipo de criterio (Criterio de Adjudicación del Lote)	Criterio_de_Adjudicacion_del_Lote/Subtipo_de_criterio	string
+Tipo de criterio (Criterio de Adjudicación del Lote)	Criterio_de_Adjudicacion_del_Lote/Tipo_de_criterio	string
+Descripción (Criterio de Adjudicación)	Criterio_de_Adjudicacion/Descripcion	string
+Note (Criterio de Adjudicación)	Criterio_de_Adjudicacion/Nota	string
+Ponderación (Criterio de Adjudicación)	Criterio_de_Adjudicacion/Ponderacion	string
+Subtipo de criterio (Criterio de Adjudicación)	Criterio_de_Adjudicacion/Subtipo_de_criterio	string
+Tipo de criterio (Criterio de Adjudicación)	Criterio_de_Adjudicacion/Tipo_de_criterio	string
+Clasificación CPV (Datos Generales del Expediente del Lote)	Datos_Generales_del_Expediente_del_Lote/Clasificacion_CPV	string
+ID del Lote (Datos Generales del Expediente del Lote)	Datos_Generales_del_Expediente_del_Lote/ID_del_Lote	string
+Objeto del Lote (Datos Generales del Expediente del Lote)	Datos_Generales_del_Expediente_del_Lote/Objeto_del_Lote	string
+Presupuesto base con impuestos (Datos Generales del Expediente del Lote)	Datos_Generales_del_Expediente_del_Lote/Presupuesto_base_con_impuestos	string
+Presupuesto base sin impuestos (Datos Generales del Expediente del Lote)	Datos_Generales_del_Expediente_del_Lote/Presupuesto_base_sin_impuestos	string
+Anexos a los pliegos (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Anexos_a_los_pliegos/Archivo	string
+Anexos a los pliegos (Hash) (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Anexos_a_los_pliegos/Hash	string
+Anexos a los pliegos (URI) (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Anexos_a_los_pliegos/URI	string
+Clasificación CPV (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Clasificacion_CPV	string
+Clasificación CPV	Datos_Generales_del_Expediente/Clasificacion_CPV	string
+Estado (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Estado	string
+Estado	Datos_Generales_del_Expediente/Estado	string
+Número de Expediente (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Numero_de_Expediente	string
+Número de Expediente	Datos_Generales_del_Expediente/Numero_de_Expediente	string
+Objeto del Contrato (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Objeto_del_Contrato	string
+Objeto del Contrato	Datos_Generales_del_Expediente/Objeto_del_Contrato	string
+Plazo de Ejecución (Comienzo) (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Comienzo	string
+Plazo de Ejecución (Comienzo)	Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Comienzo	string
+Plazo de Ejecución (Duración) (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Duracion	string
+Plazo de Ejecución (Duración)	Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Duracion	string
+Plazo de Ejecución (Fin) (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Fin	string
+Plazo de Ejecución (Fin)	Datos_Generales_del_Expediente/Plazo_de_Ejecucion/Fin	string
+Pliego de cláusulas administrativas (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Pliego_de_clausulas_administrativas/Archivo	string
+Pliego de cláusulas administrativas (Hash) (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Pliego_de_clausulas_administrativas/Hash	string
+Pliego de cláusulas administrativas	Datos_Generales_del_Expediente/Pliego_de_clausulas_administrativas/Hash	string
+Pliego de cláusulas administrativas (URI) (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Pliego_de_clausulas_administrativas/URI	string
+Pliego de cláusulas administrativas (URI)	Datos_Generales_del_Expediente/Pliego_de_clausulas_administrativas/URI	string
+Pliego de Prescripciones técnicas (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Pliego_de_Prescripciones_tecnicas/Archivo	string
+Pliego de Prescripciones técnicas (Hash) (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Pliego_de_Prescripciones_tecnicas/Hash	string
+Pliego de Prescripciones técnicas	Datos_Generales_del_Expediente/Pliego_de_Prescripciones_tecnicas/Hash	string
+Pliego de Prescripciones técnicas (URI) (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Pliego_de_Prescripciones_tecnicas/URI	string
+Pliego de Prescripciones técnicas (URI)	Datos_Generales_del_Expediente/Pliego_de_Prescripciones_tecnicas/URI	string
+Presupuesto base con impuestos (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Presupuesto_base_con_impuestos	string
+Presupuesto base sin impuestos (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Presupuesto_base_sin_impuestos	string
+Presupuesto base sin impuestos	Datos_Generales_del_Expediente/Presupuesto_base_sin_impuestos	string
+Subtipo (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Subtipo	string
+Tipo de Contrato (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Tipo_de_Contrato	string
+Tipo de Contrato	Datos_Generales_del_Expediente/Tipo_de_Contrato	string
+Valor estimado del contrato (Datos Generales del Expediente)	Datos_Generales_del_Expediente/Valor_estimado_del_contrato	string
+Valor estimado del contrato	Datos_Generales_del_Expediente/Valor_estimado_del_contrato	string
+deleted_on	deleted_on	string
+Ubicación orgánica ID (2) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/ID	string
+Ubicación orgánica ID (3) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/ID	string
+Ubicación orgánica ID (4) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/ID	string
+Ubicación orgánica ID (5) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/ID	string
+Ubicación orgánica ID (6) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/ID	string
+Ubicación orgánica ID (7) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/ID	string
+ContractFolderStatus - LocatedContractingParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - PartyIdentification - IDschemeName	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/IDschemeName	string
+ContractFolderStatus - LocatedContractingParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - PartyIdentification - IDschemeName	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/IDschemeName	string
+ContractFolderStatus - LocatedContractingParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - PartyIdentification - IDschemeName	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/IDschemeName	string
+ContractFolderStatus - LocatedContractingParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - PartyIdentification - IDschemeName	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/IDschemeName	string
+ContractFolderStatus - LocatedContractingParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - PartyIdentification - IDschemeName	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/IDschemeName	string
+ContractFolderStatus - LocatedContractingParty - ParentLocatedParty - ParentLocatedParty - PartyIdentification - IDschemeName	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/IDschemeName	string
+Ubicación orgánica (2) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/Nombre	string
+Ubicación orgánica (3) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/Nombre	string
+Ubicación orgánica (4) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/Nombre	string
+Ubicación orgánica (5) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/Nombre	string
+Ubicación orgánica (6) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/Nombre	string
+Ubicación orgánica (7) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/Nombre	string
+Ubicación orgánica (8) (Entidad Adjudicadora Jerarquía)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/Nombre	string
+Ubicación orgánica (Entidad Adjudicadora)	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/Nombre	string
+ContractFolderStatus - LocatedContractingParty - ParentLocatedParty - ParentLocatedParty - ParentLocatedParty - PartyName - Name	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/Nombre	string
+ContractFolderStatus - LocatedContractingParty - ParentLocatedParty - ParentLocatedParty - PartyName - Name	Entidad_Adjudicadora_Jerarquia/Ubicacion_organica/Nombre	string
+Actividad (Entidad Adjudicadora)	Entidad_Adjudicadora/Actividad	string
+Calle (Entidad Adjudicadora)	Entidad_Adjudicadora/Calle	string
+Código Postal (Entidad Adjudicadora)	Entidad_Adjudicadora/Codigo_Postal	string
+Correo Electrónico (Entidad Adjudicadora)	Entidad_Adjudicadora/Correo_Electronico	string
+Fax (Entidad Adjudicadora)	Entidad_Adjudicadora/Fax	string
+ID (Entidad Adjudicadora)	Entidad_Adjudicadora/ID	string
+ContractFolderStatus - LocatedContractingParty - Party - PartyIdentification - IDschemeName	Entidad_Adjudicadora/IDschemeName	string
+Nombre (Entidad Adjudicadora)	Entidad_Adjudicadora/Nombre	string
+Nombre para contacto (Entidad Adjudicadora)	Entidad_Adjudicadora/Nombre_para_contacto	string
+País (Entidad Adjudicadora)	Entidad_Adjudicadora/Pais	string
+Población (Entidad Adjudicadora)	Entidad_Adjudicadora/Poblacion	string
+Sitio Web (Entidad Adjudicadora)	Entidad_Adjudicadora/Sitio_Web	string
+Telefax (Entidad Adjudicadora)	Entidad_Adjudicadora/Telefax	string
+Teléfono (Entidad Adjudicadora)	Entidad_Adjudicadora/Telefono	string
+Tipo de Administración (Entidad Adjudicadora)	Entidad_Adjudicadora/Tipo_de_Administracion	string
+URL perfil de contratante (Entidad Adjudicadora)	Entidad_Adjudicadora/URL_perfil_de_contratante	string
+ContractFolderStatus_TendererStatus_ProcurementProjectLotID (Unmatched)	Estado_participante/ProcurementProjectLotID	string
+Opciones (Extensión de Contrato)	Extension_de_Contrato/Opciones	string
+Período de validez de las opciones (Extensión de Contrato)	Extension_de_Contrato/Periodo_de_validez_de_las_opciones	string
+Importe (Garantía Requerida Provisional)	Garantia_Requerida_Provisional/Importe	string
+Porcentaje de la garantía (Garantía Requerida Provisional)	Garantia_Requerida_Provisional/Porcentaje_de_la_garantia	string
+Tipo de Garantía (Garantía Requerida Provisional)	Garantia_Requerida_Provisional/Tipo_de_Garantia	string
+id	id	string
+ID	ID	string
+Identificador (+ Tipo: mod schemeName)	Identificador	string
+Importe total ofertado (con impuestos) (Importes de Adjudicación)	Importes_de_Adjudicacion/Importe_total_ofertado_con_impuestos	string
+Importe total ofertado (sin impuestos) (Importes de Adjudicación)	Importes_de_Adjudicacion/Importe_total_ofertado_sin_impuestos	string
+Importe total ofertado (sin impuestos)	Importes_de_Adjudicacion/Importe_total_ofertado_sin_impuestos	string
+Fecha de entrada en Vigor del Contrato (Información sobre el Contrato)	Informacion_sobre_el_Contrato/Fecha_de_entrada_en_Vigor_del_Contrato	string
+Fecha de Formalización (Información sobre el Contrato)	Informacion_sobre_el_Contrato/Fecha_de_Formalizacion	string
+Número de Contrato (Información sobre el Contrato)	Informacion_sobre_el_Contrato/Numero_de_Contrato	string
+Número de recursos presentados (Información sobre el Contrato)	Informacion_sobre_el_Contrato/Numero_de_recursos_presentados	string
+Cantidad Máxima (Limitación del número de licitadores a los que se invitará)	Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Cantidad_Maxima	string
+Cantidad Mínima (Limitación del número de licitadores a los que se invitará)	Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Cantidad_Minima	string
+Criterios objetivos para la selección del número limitado de candidatos (Limitación del número de licitadores a los que se invitará)	Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Criterios_objetivos_para_la_seleccion_del_numero_limitado_de_candidatos	string
+El poder adjudicador se reserva el derecho de adjudicar contratos que combinen lotes (Limitación del número de licitadores a los que se invitará)	Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/El_poder_adjudicador_se_reserva_el_derecho_de_adjudicar_contratos_que_combinen_lotes	string
+Número de lotes a los que se debe ofertar (Limitación del número de licitadores a los que se invitará)	Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Numero_de_lotes_a_los_que_se_debe_ofertar	string
+Número de lotes a los que se puede ofertar (Limitación del número de licitadores a los que se invitará)	Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Numero_de_lotes_a_los_que_se_puede_ofertar	string
+Número máximo de lotes que se puede adjudicar a un licitador (Limitación del número de licitadores a los que se invitará)	Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Numero_maximo_de_lotes_que_se_puede_adjudicar_a_un_licitador	string
+Número previsto de operadores (Limitación del número de licitadores a los que se invitará)	Limitacion_del_numero_de_licitadores_a_los_que_se_invitara/Numero_previsto_de_operadores	string
+Lote	Lote	string
+Código de País (Lugar de ejecución del Lote)	Lugar_de_ejecucion_del_Lote/Codigo_de_Pais	string
+Código de Subentidad Territorial (Lugar de ejecución del Lote)	Lugar_de_ejecucion_del_Lote/Codigo_de_Subentidad_Territorial	string
+Código Postal (Lugar de ejecución del Lote)	Lugar_de_ejecucion_del_Lote/Codigo_Postal	string
+País (Lugar de ejecución del Lote)	Lugar_de_ejecucion_del_Lote/Pais	string
+Población (Lugar de ejecución del Lote)	Lugar_de_ejecucion_del_Lote/Poblacion	string
+Subentidad Territorial (Lugar de ejecución del Lote)	Lugar_de_ejecucion_del_Lote/Subentidad_Territorial	string
+Código de País (Lugar de ejecución)	Lugar_de_ejecucion/Codigo_de_Pais	string
+Código de Subentidad Territorial (Lugar de ejecución)	Lugar_de_ejecucion/Codigo_de_Subentidad_Territorial	string
+Código Postal (Lugar de ejecución)	Lugar_de_ejecucion/Codigo_Postal	string
+País (Lugar de ejecución)	Lugar_de_ejecucion/Pais	string
+Población (Lugar de ejecución)	Lugar_de_ejecucion/Poblacion	string
+Subentidad Territorial (Lugar de ejecución)	Lugar_de_ejecucion/Subentidad_Territorial	string
+Importe sin impuestos de la modificación (Modificaciones de contrato)	Modificaciones_de_contrato/Importe_sin_impuestos_de_la_modificacion	string
+Importe sin impuestos del contrato tras la modificación (Modificaciones de contrato)	Modificaciones_de_contrato/Importe_sin_impuestos_del_contrato_tras_la_modificacion	string
+Número de Contrato (Modificaciones de contrato)	Modificaciones_de_contrato/Numero_de_Contrato	string
+Número de la modificación (Modificaciones de contrato)	Modificaciones_de_contrato/Numero_de_la_modificacion	string
+Observaciones (Modificaciones de contrato)	Modificaciones_de_contrato/Observaciones	string
+Plazo de la Modificación (Modificaciones de contrato)	Modificaciones_de_contrato/Plazo_de_la_Modificacion	string
+Plazo total tras la modificación (Modificaciones de contrato)	Modificaciones_de_contrato/Plazo_total_tras_la_modificacion	string
+Nombre	Nombre	string
+Número de Licitadores Participantes	Numero_de_Licitadores_Participantes	string
+Documento publicado (FileName) (Otros documentos publicados)	Otros_documentos_publicados/Documento_publicado/FileName	string
+Documento publicado (ID) (Otros documentos publicados)	Otros_documentos_publicados/Documento_publicado/ID	string
+Documento publicado (URI) (Otros documentos publicados)	Otros_documentos_publicados/Documento_publicado/URI	string
+Tipo de documento publicado (Otros documentos publicados)	Otros_documentos_publicados/Tipo_de_documento_publicado	string
+Fecha (Plazo de Obtención de Pliegos)	Plazo_de_Obtencion_de_Pliegos/Fecha	string
+Hora (Plazo de Obtención de Pliegos)	Plazo_de_Obtencion_de_Pliegos/Hora	string
+Fecha (Plazo de presentación de Oferta)	Plazo_de_presentacion_de_Oferta/Fecha	string
+Hora (Plazo de presentación de Oferta)	Plazo_de_presentacion_de_Oferta/Hora	string
+Observaciones (Plazo de presentación de Oferta)	Plazo_de_presentacion_de_Oferta/Observaciones	string
+Plazo de presentación de Oferta (Plazo de presentación de Oferta)	Plazo_de_presentacion_de_Oferta/Plazo_de_presentacion_de_Oferta	string
+Fecha (Plazo de Presentación de Solicitudes)	Plazo_de_Presentacion_de_Solicitudes/Fecha	string
+Hora (Plazo de Presentación de Solicitudes)	Plazo_de_Presentacion_de_Solicitudes/Hora	string
+Observaciones (Plazo de Presentación de Solicitudes)	Plazo_de_Presentacion_de_Solicitudes/Observaciones	string
+Presentación de Solicitudes (Fecha)	Presentacion_de_Solicitudes/Fecha	string
+Presentación de Solicitudes (Hora)	Presentacion_de_Solicitudes/Hora	string
+Directiva europea de aplicación (Proceso de licitación)	Proceso_de_licitacion/Directiva_europea_de_aplicacion	string
+Idioma de Presentación de Oferta (Proceso de licitación)	Proceso_de_licitacion/Idioma_de_Presentacion_de_Oferta	string
+La licitación hace uso de subasta electrónica (Proceso de licitación)	Proceso_de_licitacion/La_licitacion_hace_uso_de_subasta_electronica	string
+Medio de presentación de ofertas electrónicas (Proceso de licitación)	Proceso_de_licitacion/Medio_de_presentacion_de_ofertas_electronicas	string
+Presentación de Oferta (Fecha)	Proceso_de_licitacion/Presentacion_de_la_oferta/Fecha	string
+Presentación de Oferta (Hora)	Proceso_de_licitacion/Presentacion_de_la_oferta/Hora	string
+Presentación de la oferta (Proceso de licitación)	Proceso_de_licitacion/Presentacion_de_la_oferta/Numero	string
+Presentación de Oferta	Proceso_de_licitacion/Presentacion_de_la_oferta/Numero	string
+Presentación de Oferta (Observaciones)	Proceso_de_licitacion/Presentacion_de_la_oferta/Observaciones	string
+Sistema de contratación (Proceso de licitación)	Proceso_de_licitacion/Sistema_de_contratacion	string
+Tipo de procedimiento (Proceso de licitación)	Proceso_de_licitacion/Tipo_de_procedimiento	string
+Tipo de Procedimiento	Proceso_de_licitacion/Tipo_de_procedimiento	string
+Tipo de tramitación (Proceso de licitación)	Proceso_de_licitacion/Tipo_de_tramitacion	string
+ContractFolderStatus_TenderingProcess_OverThresholdIndicator (Unmatched)	Proceso_de_participacion/OverThresholdIndicator	string
+ContractFolderStatus - ProcurementProjectLot - IDschemeName	ProcurementProjectLot_IDschemeName	string
+Agencia (Publicaciones oficiales)	Publicaciones_oficiales/Agencia	string
+Documento publicado (FileName) (Publicaciones oficiales)	Publicaciones_oficiales/Documento_publicado/FileName	string
+Documento publicado (URI) (Publicaciones oficiales)	Publicaciones_oficiales/Documento_publicado/URI	string
+Fecha de envío de anuncio al diario oficial (Publicaciones oficiales)	Publicaciones_oficiales/Fecha_de_envio_de_anuncio_al_diario_oficial	string
+Fecha de Publicación (Publicaciones oficiales)	Publicaciones_oficiales/Fecha_de_Publicacion	string
+Medio de Publicación (Publicaciones oficiales)	Publicaciones_oficiales/Medio_de_Publicacion	string
+Medio de Publicación	Publicaciones_oficiales/Medio_de_Publicacion	string
+Tipo de Anuncio (Publicaciones oficiales)	Publicaciones_oficiales/Tipo_de_Anuncio	string
+Tipo de Anuncio	Publicaciones_oficiales/Tipo_de_Anuncio	string
+Tipo de documento publicado (Publicaciones oficiales)	Publicaciones_oficiales/Tipo_de_documento_publicado	string
+Condiciones de admisión (código) (Requisitos de Participación del Lote)	Requisitos_de_Participacion_del_Lote/Condiciones_de_admision/codigo	string
+Condiciones de admisión (Requisitos de Participación del Lote)	Requisitos_de_Participacion_del_Lote/Condiciones_de_admision/Descripcion	string
+Criterio de evaluación económica-financiera (código) (Requisitos de Participación del Lote)	Requisitos_de_Participacion_del_Lote/Criterio_de_evaluacion_economica-financiera/codigo	string
+Criterio de evaluación económica-financiera (Requisitos de Participación del Lote)	Requisitos_de_Participacion_del_Lote/Criterio_de_evaluacion_economica-financiera/Descripcion	string
+Criterio de evaluación económica-financiera (threshold) (Requisitos de Participación del Lote)	Requisitos_de_Participacion_del_Lote/Criterio_de_evaluacion_economica-financiera/threshold	string
+Criterio de evaluación técnica (código) (Requisitos de Participación del Lote)	Requisitos_de_Participacion_del_Lote/Criterio_de_evaluacion_tecnica/codigo	string
+Criterio de evaluación técnica (Requisitos de Participación del Lote)	Requisitos_de_Participacion_del_Lote/Criterio_de_evaluacion_tecnica/Descripcion	string
+Criterio de evaluación técnica (threshold) (Requisitos de Participación del Lote)	Requisitos_de_Participacion_del_Lote/Criterio_de_evaluacion_tecnica/threshold	string
+Calificación empresarial solicitada (Requisitos de Participación)	Requisitos_de_Participacion/Calificacion_empresarial_solicitada/Codigo	string
+ContractFolderStatus_TenderingTerms_TendererQualificationRequest_RequiredBusinessClassificationScheme_ID (Unmatched)	Requisitos_de_participacion/Calificacion_empresarial_solicitada/ID	string
+Cóndiciones de admisión (Requisitos de Participación)	Requisitos_de_Participacion/Condiciones_de_admision	string
+Condiciones de admisión (código) (Requisitos de Participación)	Requisitos_de_Participacion/Condiciones_de_admision_codigo	string
+Criterio de evaluación económica-financiera (código) (Requisitos de Participación)	Requisitos_de_Participacion/Criterio_de_evaluacion_economica-financiera/codigo	string
+Criterio de evaluación económica-financiera (Requisitos de Participación)	Requisitos_de_Participacion/Criterio_de_evaluacion_economica-financiera/Descripcion	string
+Criterio de evaluación económica-financiera (threshold) (Requisitos de Participación)	Requisitos_de_Participacion/Criterio_de_evaluacion_economica-financiera/threshold	string
+Criterio de evaluación técnica (código) (Requisitos de Participación)	Requisitos_de_Participacion/Criterio_de_evaluacion_tecnica/codigo	string
+Criterio de evaluación técnica (Requisitos de Participación)	Requisitos_de_Participacion/Criterio_de_evaluacion_tecnica/Descripcion	string
+Criterio de evaluación técnica (threshold) (Requisitos de Participación)	Requisitos_de_Participacion/Criterio_de_evaluacion_tecnica/threshold	string
+Empleados (cantidad) (Requisitos de Participación)	Requisitos_de_Participacion/Empleados/cantidad	string
+Empleados (descripción) (Requisitos de Participación)	Requisitos_de_Participacion/Empleados/descripcion	string
+Experiencia (cantidad) (Requisitos de Participación)	Requisitos_de_Participacion/Experiencia/cantidad	string
+Experiencia (descripción) (Requisitos de Participación)	Requisitos_de_Participacion/Experiencia/descripcion	string
+ContractFolderStatus_TenderingTerms_ProcurementNationalLegislationCode (Unmatched)	Requisitos_de_Participacion/ProcurementNationalLegislationCode	string
+Solvencia Requerida (Requisitos de Participación)	Requisitos_de_Participacion/Solvencia_Requerida	string
+Título habilitante (Requisitos de Participación)	Requisitos_de_Participacion/Titulo_habilitante	string
+Fecha del acuerdo (Resultado del procedimiento)	Resultado_del_procedimiento/Fecha_del_acuerdo	string
+Lote (Resultado del procedimiento)	Resultado_del_procedimiento/Lote	string
+Motivación (Resultado del procedimiento)	Resultado_del_procedimiento/Motivacion	string
+Número de ofertas recibidas de pymes (Resultado del procedimiento)	Resultado_del_procedimiento/Numero_de_ofertas_recibidas_de_pymes	string
+Ofertas recibidas (Resultado del procedimiento)	Resultado_del_procedimiento/Ofertas_recibidas	string
+Ofertas recibidas de extranjeros comunitarios (UE) (Resultado del procedimiento)	Resultado_del_procedimiento/Ofertas_recibidas_de_extranjeros_comunitarios/UE	string
+Ofertas recibidas de extranjeros no comunitarios (NO UE) (Resultado del procedimiento)	Resultado_del_procedimiento/Ofertas_recibidas_de_extranjeros_no_comunitarios/NO_UE	string
+Precio de la oferta más alta (Resultado del procedimiento)	Resultado_del_procedimiento/Precio_de_la_oferta_mas_alta	string
+Precio de la oferta más baja (Resultado del procedimiento)	Resultado_del_procedimiento/Precio_de_la_oferta_mas_baja	string
+Resultado (Resultado del procedimiento)	Resultado_del_procedimiento/Resultado	string
+Resultado	Resultado_del_procedimiento/Resultado	string
+Se han excluido ofertas por ser anormalmente bajas (Resultado del procedimiento)	Resultado_del_procedimiento/Se_han_excluido_ofertas_por_ser_anormalmente_bajas	string
+Descripción (Subcontratación permitida)	Subcontratacion_permitida/Descripcion	string
+Porcentaje (Subcontratación permitida)	Subcontratacion_permitida/Porcentaje	string
+summary	summary	string
+title	title	string
+Ubicación orgánica	Ubicacion_organica	string
+updated	updated	string
