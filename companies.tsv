@@ -1,0 +1,9 @@
+ORIGINAL	DBFIELD	TYPE
+"CompanyDescription"	"CompanyDescription"	"string"
+"CompanyType"	"CompanyType"	"string"
+"FullName"	"FullName"	"string"
+"id_tender"	"id_tender"	"string"
+"Name"	"Name"	"string"
+"NIF"	"NIF"	"string"
+"NIFtype"	"NIFtype"	"string"
+"Province"	"Province"	"string"
