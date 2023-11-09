@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
+    parser.add_argument('--drop',action='store_true', help='Delete previous data')
 
     args = parser.parse_args()
     # Setup logging
@@ -72,10 +73,14 @@ def main():
             logging.error(f'{ntp_id} is not a valid ntp id')
             sys.exit()
 
+    if args.drop:
+        clean_col.delete_many({})
+        logging.info("Deleting existing data")
+
     if args.id is not None:
         query = {'_id': args.id}
     else:
-        query = [{'id':{'$exists':1}}]
+        query = [{'id':{'$exists':1}}, {'data_model':'v2023'}]
         if args.ini is not None:
             query.append({'_id':{'$gte': args.ini}})
         if args.fin is not None:
