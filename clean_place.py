@@ -8,6 +8,7 @@ import argparse
 import logging
 import os
 import time
+from datetime import datetime
 from yaml import load, CLoader
 import ntp_entry as ntp
 import ntp_storage as ntpst
@@ -31,7 +32,7 @@ def main():
     parser.add_argument('--ini', action='store', help='Initial document range')
     parser.add_argument('--fin', action='store', help='Final document range')
     parser.add_argument('--id', action='store', help='Selected document id')
-    parser.add_argument('--type', action='store', help='Type of procurement', default="mayores")
+    parser.add_argument('--group', action='store', help='Type of procurement')
     parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
@@ -58,12 +59,12 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    if args.type == 'menores':
-        logging.info("Type of procurement set to 'menores'")
-        incoming_col = db_lnk.db.get_collection('place_menores')
+    if args.group == 'minors':
+        logging.info("Type of procurement set to 'minors'")
+        incoming_col = db_lnk.db.get_collection('place_menores_new')
         clean_col = db_lnk.db.get_collection('place_clean_menores')
     else:
-        incoming_col = db_lnk.db.get_collection('place')
+        incoming_col = db_lnk.db.get_collection('place_new')
         clean_col = db_lnk.db.get_collection('place_clean')
 
     for ntp_id in (args.id, args.ini, args.fin):
@@ -85,6 +86,8 @@ def main():
     current = 0
     finished = False
     logging.info("Grouping documents according to place id")
+    LICS = {}
+    STATS = {}
     while not finished:
         logging.info(f"Processing {current} to {current + chunk_size}")
         PLACE_IDS = [
@@ -100,8 +103,6 @@ def main():
         if finished:
             continue
         current += chunk_size
-        LICS = {}
-        STATS = {}
 
         for doc in incoming_col.aggregate([
             {'$match' : {'id': {'$in': PLACE_IDS}}},
@@ -124,16 +125,37 @@ def main():
     logging.info("Dropping patch collection")
     clean_col.delete_many({})
 
-    logging.info("Start processing")
+    logging.info(f"Start processing, {len(LICS)} place ids")
     num_ids = 0
     num_new = 0
+    
     for place_id in LICS:
         if args.verbose:
             logging.info(f"Processing place_id {place_id} with {len(LICS[place_id]) - 1} updates ")
-        list_ids = sorted(LICS[place_id], key=lambda x: x['updated'])
-        final_id = list_ids[-1]['_id']
+        update_dates =  []
+        for ntp_doc in LICS[place_id]:
+            logging.debug(ntp_doc)
+            if isinstance(ntp_doc['updated'], list):
+                for upd_date in ntp_doc['updated']:
+                    update_dates.append([upd_date, ntp_doc['_id']])
+            else:
+                update_dates.append([ntp_doc['updated'], ntp_doc['_id']])
+        last_update = ''
+        last_doc = ''
+        for ind, upd_item in enumerate(update_dates):
+            upd_date, upd_id = upd_item
+            if isinstance(upd_date, datetime):
+                upd_date = upd_date.strftime('%Y-%m-%d %H:%M:%S')
+            update_dates[ind] = [upd_date[0:19], upd_id]
+            logging.debug(f"{upd_id} {upd_date}")
+            if upd_date > last_update:
+                last_update = upd_date
+                last_doc = upd_id
+        logging.debug(f"{place_id} {last_doc} {last_update}")
+
         final_doc = ntp.NtpEntry()
-        final_doc.load_from_db(incoming_col, final_id)
+        final_doc.load_from_db(incoming_col, last_doc)
+        final_doc.data['updates_dates_list'] = update_dates
         final_doc.commit_to_db(clean_col)
         num_new += 1
         num_ids += 1
