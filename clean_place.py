@@ -62,10 +62,10 @@ def main():
     )
     if args.group == 'minors':
         logging.info("Type of procurement set to 'minors'")
-        incoming_col = db_lnk.db.get_collection('place_menores_new')
-        clean_col = db_lnk.db.get_collection('place_clean_menores')
+        incoming_col = db_lnk.db.get_collection('place_menores_raw')
+        clean_col = db_lnk.db.get_collection('place_menores_clean')
     else:
-        incoming_col = db_lnk.db.get_collection('place_new')
+        incoming_col = db_lnk.db.get_collection('place_raw')
         clean_col = db_lnk.db.get_collection('place_clean')
 
     for ntp_id in (args.id, args.ini, args.fin):
@@ -80,7 +80,7 @@ def main():
     if args.id is not None:
         query = {'_id': args.id}
     else:
-        query = [{'id':{'$exists':1}}, {'data_model':'v2023'}]
+        query = [{'id':{'$exists':1}}]
         if args.ini is not None:
             query.append({'_id':{'$gte': args.ini}})
         if args.fin is not None:
@@ -110,7 +110,7 @@ def main():
         current += chunk_size
 
         for doc in incoming_col.aggregate([
-            {'$match' : {'id': {'$in': PLACE_IDS}}},
+            {'$match' : {'$and':[{'id': {'$in': PLACE_IDS}}, {'data_model':'v2023'}]}},
             {
             '$group':
                 {
@@ -120,10 +120,14 @@ def main():
             }], allowDiskUse=True):
             place_id = os.path.basename(doc['_id'])
             LICS[place_id] = doc['versions']
+            if not doc['versions']:
+                logging.warning(f"no documents found with v2023 data model for {doc['_id']}")
             if len(doc['versions']) in STATS:
                 STATS[len(doc['versions'])] += 1
             else:
                 STATS[len(doc['versions'])] = 1
+            found_ok = True
+
 
     logging.info(f"Found versioned entries: {[str(k) + ':' + str(v) for k,v in sorted (STATS.items())]}")
 
@@ -133,7 +137,7 @@ def main():
     logging.info(f"Start processing, {len(LICS)} place ids")
     num_ids = 0
     num_new = 0
-    
+
     for place_id in LICS:
         if args.verbose:
             logging.info(f"Processing place_id {place_id} with {len(LICS[place_id]) - 1} updates ")
@@ -147,6 +151,7 @@ def main():
                 update_dates.append([ntp_doc['updated'], ntp_doc['_id']])
         last_update = ''
         last_doc = ''
+        old_ids = set()
         for ind, upd_item in enumerate(update_dates):
             upd_date, upd_id = upd_item
             if isinstance(upd_date, datetime):
@@ -157,11 +162,25 @@ def main():
                 last_update = upd_date
                 last_doc = upd_id
         logging.debug(f"{place_id} {last_doc} {last_update}")
+        for item in update_dates:
+            upd_date, upd_id = upd_item
+            if upd_id == last_doc:
+                continue
+            old_ids.add(upd_id)
 
         final_doc = ntp.NtpEntry()
         final_doc.load_from_db(incoming_col, last_doc)
         final_doc.data['updates_dates_list'] = update_dates
         final_doc.commit_to_db(clean_col)
+        for ntp_id in old_ids:
+            clean_col.replace_one(
+                {'_id': ntp_id},
+                {                {
+                    'id': final_doc.data['id']
+                    'obsolete_version': True
+                    'updated_to': final_doc.data['_id']
+                }
+            )
         num_new += 1
         num_ids += 1
     logging.info(f"Processed {num_ids} entries, added {num_new} unique documents")
