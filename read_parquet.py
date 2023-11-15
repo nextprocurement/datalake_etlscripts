@@ -64,9 +64,9 @@ def main():
     )
 
     if args.group in ['outsiders', 'insiders']:
-        incoming_col = db_lnk.db.get_collection('place_new')
+        incoming_col = db_lnk.db.get_collection('place_raw')
     else:
-        incoming_col = db_lnk.db.get_collection('place_menores_new')
+        incoming_col = db_lnk.db.get_collection('place_menores_raw')
 
     data_table = pd.read_parquet(args.pkt_file, use_nullable_dtypes=True)
     new_cols = pd.read_csv(args.codes_file, sep='\t', index_col='ORIGINAL')
