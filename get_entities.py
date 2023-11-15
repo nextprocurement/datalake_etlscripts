@@ -29,6 +29,7 @@ CIF_REGEX = r'^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$'
 NIE_REGEX = r'^[XYZ]\d{7,8}[A-Z]$'
 FIELDS = ['Nombre', 'Ubicacion_organica', '']
 
+
 def valid_nif(a):
     a = str(a).upper().replace('-','').replace(' ','').replace('.', '')
     if re.match(CIF_REGEX, a) or re.match(DNI_REGEX, a) or re.match(NIE_REGEX, a):
@@ -73,9 +74,12 @@ def main():
         connect_db=True
     )
     if args.group in ['insiders', 'outsiders']:
-        incoming_col = db_lnk.db.get_collection('place_clean')
+        incoming_col = db_lnk.db.get_collection('place')
+    elif args.group == 'minors':
+        incoming_col = db_lnk.db.get_collection('place_menores')
     else:
-        incoming_col = db_lnk.db.get_collection('place_clean_menores')
+        logging.error("--group missing or not recognized. acceptable minors|insiders|outsiders")
+        sys.exit()
 
     contract_col = db_lnk.db.get_collection('contractingParties')
     adjud_col = db_lnk.db.get_collection('adjudicatarios')
@@ -115,12 +119,12 @@ def main():
             continue
         contracting_party = {}
         contracting_party['other_ids'] = []
-        if 'Entidad_Adjudicadora/ID' in ntp_doc.data:
+        if 'Entidad_Adjudicadora/ID' in ntp_doc.data and ntp_doc.data['Entidad_Adjudicadora/ID']:
             if not isinstance(ntp_doc.data['Entidad_Adjudicadora/ID'], list):
                 ntp_doc.data['Entidad_Adjudicadora/ID'] = [ntp_doc.data['Entidad_Adjudicadora/ID']]
                 ntp_doc.data['Entidad_Adjudicadora/IDschemeName'] = [ntp_doc.data['Entidad_Adjudicadora/IDschemeName']]
             for ind, value in enumerate(ntp_doc.data['Entidad_Adjudicadora/ID']):
-                print(ind, value)
+                logging.debug(f"{ind}, {value}")
                 if ntp_doc.data['Entidad_Adjudicadora/IDschemeName'][ind] == 'NIF':
                     contracting_party['nif'] = value
                 else:
@@ -142,14 +146,15 @@ def main():
                         upsert=True
                     )
                 except Exception as e:
-                    print(e)
-                    print(contracting_party)
+                    logging.error(e)
+                    logging.error(contracting_party)
         else:
             if 'nif' in contracting_party:
                 logging.error(f"nif contr. incorrecto {contracting_party['nif']}")
             else:
-                logging.error(f"nif no encontrado")
-            print(contracting_party)
+                logging.error(f"Nif no encontrado")
+                logging.debug(ntp_doc.data)
+            logging.debug(contracting_party)
 
         adjudicatario = {}
         #logging.debug(ntp_doc.data)
@@ -175,8 +180,8 @@ def main():
                             upsert=True
                         )
                     except Exception as e:
-                        print(e)
-                        print(adjudicatario)
+                        logging.error(e)
+                        logging.error(adjudicatario)
                 else:
                     logging.error(f"nif adj. incorrecto {nif}")
 
