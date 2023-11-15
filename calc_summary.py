@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-''' Script to build historical on place
-    usage: process_place.py [-h] [--ini INI] [--fin FIN] [--id ID]
+''' Script to build summary data for API
 '''
 import sys
 import argparse
@@ -46,9 +45,11 @@ def main():
         connect_db=True
     )
     if args.group in ['outsiders', 'insiders']:
-        incoming_col = db_lnk.db.get_collection('place_new')
+        incoming_col = db_lnk.db.get_collection('place')
+        data_store = 'place'
     else:
-        incoming_col = db_lnk.db.get_collection('place_menores_new')
+        incoming_col = db_lnk.db.get_collection('place_menores')
+        data_store = 'place_menores'
 
     data = {}
     data['total_documents'] = incoming_col.estimated_document_count()
@@ -58,7 +59,6 @@ def main():
         'Proceso_de_licitacion/Idioma_de_Presentacion_de_Oferta',
         'Entidad_Adjudicadora/Tipo_de_Administracion',
         'Entidad_Adjudicadora/Pais',
-        'Lugar_de_ejecucion_del_Lote/Pais',
         'Lugar_de_ejecucion/Pais'
     ]
 
