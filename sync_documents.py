@@ -27,8 +27,8 @@ import time
 from types import NoneType
 from yaml import load, CLoader
 import swiftclient as sw
-import ntp_entry as ntp
-import ntp_storage as ntpst
+from nextplib import ntp_entry as ntp
+from nextplib import ntp_storage as ntpst
 from mmb_data.mongo_db_connect import Mongo_db
 
 def get_id_range(args):

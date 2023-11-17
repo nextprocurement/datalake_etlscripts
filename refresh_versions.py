@@ -10,8 +10,7 @@ import os
 import time
 from datetime import datetime
 from yaml import load, CLoader
-import ntp_entry as ntp
-import ntp_storage as ntpst
+from nextplib import ntp_entry as ntp
 from mmb_data.mongo_db_connect import Mongo_db
 
 
@@ -80,21 +79,27 @@ def main():
             query.append({'_id':{'$lte': args.fin}})
         query = {'$and': query}
 
-    for doc in clean_col.find({}, {'_id':1, 'id':1, 'updates_dates_list':1}):
+    DONE = set()
+
+    for doc in clean_col.find({'obsolete_version':{'$exists':0}}, {'_id':1, 'id':1, 'updates_dates_list':1}):
         logging.info(f"Processing {doc['_id']}")
         for item in doc['updates_dates_list']:
             logging.debug(item)
-            if item[1] == doc['_id']:
+            if item[1] == doc['_id'] or item[1] in DONE:
                 continue
-            logging.debug(f"Found old version {item[1]} at {item[0], adding pointer}")
+            logging.debug(f"Found old version {item[1]} at {item[0]}, adding pointer to {doc['_id']}")
+
             clean_col.replace_one(
                 {'_id': item[1]},
                 {
-                    'id': doc['id']
-                    'obsolete_version': True
+                    'id': doc['id'],
+                    'obsolete_version': True,
                     'updated_to': doc['_id']
-                }
+                },
+                upsert= True
+
             )
+            DONE.add(item[1])
 
 
 

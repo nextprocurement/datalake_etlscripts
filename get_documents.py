@@ -28,15 +28,25 @@ import os
 import time
 from yaml import load, CLoader
 import swiftclient as sw
-import ntp_entry as ntp
-import ntp_storage as ntpst
+from nextplib import ntp_entry as ntp
+from nextplib import ntp_storage as ntpst
 from mmb_data.mongo_db_connect import Mongo_db
 
 FIELDS_TO_SKIP = [
-        'id', 
-        'LocatedContractingParty_WebsiteURI', 
-        'URL_perfil_contratante'
+        'id',
+        'LocatedContractingParty_WebsiteURI',
+        'Entidad_Adjudicadora/URL_perfil_de_contratante',
+        'Entidad_Adjudicadora/Sitio_Web',
+        'Proceso_de_licitacion/Medio_de_Presentacion_de_Ofertas_Electronicas'
 ]
+
+STORE_DOC_NAMES = {
+        'Datos_Generales_del_Expediente/Pliego_de_Clausulas_Administrativas/URI': 'Pliego_clausulas_administrativas_URI',
+        'Datos_Generales_del_Expediente/Pliego_de_Prescripciones_Tecnicas/URI': 'Pliego_Prescripciones_tecnicas_URI',
+        'Datos_Generales_del_Expediente/Anexos_a_los_Pliegos/URI': 'Anexos_pliegos_URI',
+        'Otros_documentos_publicados/Documento_Publicado/URI': 'Documento_Publicado_URI',
+        'Datos_Generales_del_Expediente/Pliego_de_Prescripciones_Tecnicas/Archivo': 'Pliego_Prescripciones_tecnicas_Archivo'
+        }
 
 def main():
     ''' Main '''
@@ -46,7 +56,7 @@ def main():
     parser.add_argument('--ini', action='store', help='Initial document range')
     parser.add_argument('--fin', action='store', help='Final document range')
     parser.add_argument('--id', action='store', help='Selected document id')
-    parser.add_argument('--where', action='store', default='disk', choices=['disk', 'gridfs', 'swift'], help='Selected storage (disk|gridfs|swift)')
+    parser.add_argument('--where', action='store', default='disk', choices=['disk', 'gridfs', 'swiºft'], help='Selected storage (disk|gridfs|swift)')
     parser.add_argument('--folder', action='store', help='Selected Disk/Swift folder')
     parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
@@ -175,8 +185,14 @@ def main():
             else:
                 last_server = ntp_doc.get_server(url_field)
             # print(f"{last_server}")
+            try:
+                file_name = STORE_DOC_NAMES[url_field]
+            except Exception as e:
+                logging.error(e)
+                continue
             results = ntp_doc.store_document(
                 url_field,
+                file_name,
                 replace=args.replace,
                 storage=storage,
                 scan_only=args.scan_only,
@@ -185,11 +201,11 @@ def main():
             )
             if args.verbose:
                 if results[0] == ntp.SKIPPED:
-                    logging.info(f"{url_field} skipped, File already exists and --replace not set or --scan_only")
+                    logging.info(f"{file_name} skipped, File already exists and --replace not set or --scan_only")
                 elif results[0] == ntp.UNWANTED_TYPE:
-                    logging.info(f"{url_field} skipped, unwanted file type {results[1]}")
+                    logging.info(f"{file_name} skipped, unwanted file type {results[1]}")
                 elif results[0] == ntp.STORE_OK:
-                    logging.info(f"File Stored as {ntp_doc.get_file_name(url_field, results[1])}")
+                    logging.info(f"File Stored as {ntp_doc.get_file_name(file_name, results[1])}")
                 elif results[0] == ntp.SSL_ERROR:
                     logging.info(f"{url_field} unavailable, Reason: certificate error")
                 else:

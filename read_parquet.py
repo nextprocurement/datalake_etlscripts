@@ -7,7 +7,7 @@ import logging
 import re
 import pandas as pd
 from yaml import load, CLoader
-import ntp_entry as ntp
+from nextplib import ntp_entry as ntp
 from mmb_data.mongo_db_connect import Mongo_db
 
 def main():

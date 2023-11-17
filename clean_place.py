@@ -10,8 +10,8 @@ import os
 import time
 from datetime import datetime
 from yaml import load, CLoader
-import ntp_entry as ntp
-import ntp_storage as ntpst
+from nextplib import ntp_entry as ntp
+#from nextplib import ntp_storage as ntpst
 from mmb_data.mongo_db_connect import Mongo_db
 
 
@@ -175,11 +175,12 @@ def main():
         for ntp_id in old_ids:
             clean_col.replace_one(
                 {'_id': ntp_id},
-                {                {
-                    'id': final_doc.data['id']
-                    'obsolete_version': True
+                {
+                    'id': final_doc.data['id'],
+                    'obsolete_version': True,
                     'updated_to': final_doc.data['_id']
-                }
+                },
+                upsert=True
             )
         num_new += 1
         num_ids += 1

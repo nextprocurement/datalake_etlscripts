@@ -20,8 +20,7 @@ import os
 import time
 import re
 from yaml import load, CLoader
-import ntp_entry as ntp
-import ntp_storage as ntpst
+from nextplib import ntp_entry as ntp
 from mmb_data.mongo_db_connect import Mongo_db
 
 DNI_REGEX = r'^(\d{8})([A-Z])$'

@@ -8,8 +8,7 @@ import logging
 import os
 import time
 from yaml import load, CLoader
-import ntp_entry as ntp
-import ntp_storage as ntpst
+from nextplib import ntp_entry as ntp
 from mmb_data.mongo_db_connect import Mongo_db
 
 
