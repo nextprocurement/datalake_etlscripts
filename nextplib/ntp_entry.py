@@ -125,6 +125,29 @@ def _get_ips(url):
         ips.append(ipval.to_text())
     return ips
 
+def get_file_type(headers):
+    doc_type = ''
+    debug = []
+    if 'Content-type' in headers:
+        debug.append(f"Content-type: {headers['Content-type']}")
+        if headers['Content-type'] == 'application/pdf':
+            doc_type = 'pdf'
+        elif headers['Content-type'].startswith('text/html'):
+            doc_type = 'html'
+        elif headers['Content-type'] == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            doc_type = 'docx'
+    if 'Content-disposition' in headers:
+        debug.append(f"Content-Disposition: {headers['Content-Disposition']}")
+        headers['Content-disposition'] = headers['Content-disposition'].replace('769;','_').replace('8230;','_')
+        for item in headers['Content-disposition'].split(';'):
+            if 'filename' in item:
+                lb, file_name = item.split('=', maxsplit=1)
+                file_name = file_name.replace(' .', '.').lower()
+                logging.debug(file_name)
+                doc_type = os.path.splitext(file_name)[1].replace('.', '').replace('?=', '').replace('"', '')
+    logging.debug(f"HEADS {debug} {doc_type}")
+    return doc_type
+
 class NtpEntry:
     def __init__(self):
         self.ntp_order = 0
@@ -142,6 +165,9 @@ class NtpEntry:
 
     def order_from_id(self):
         self.ntp_order = parse_ntp_id(self.ntp_id)
+
+    def is_obsolete(self):
+        return 'obsolete_version' in self.data and self.data['obsolete_version']
 
     def _find_previous_doc(self, col):
         found = False
@@ -177,8 +203,8 @@ class NtpEntry:
                 break
         return old_doc
 
-    def commit_to_db(self, col, upsert=False):
-        if upsert:
+    def commit_to_db(self, col, update=False):
+        if update:
             # old_doc = col.find_one(
             #     {'id': self.data['id'], 'updated': self.data['updated']}
             # )
@@ -203,11 +229,14 @@ class NtpEntry:
 
         return self.ntp_order
 
-    def load_from_db(self, col_id,  ntp_id):
+    def load_from_db(self, col_id,  ntp_id, follow_version=False):
         try:
             self.data = col_id.find_one({'_id': ntp_id})
             self.ntp_id = ntp_id
             self.ntp_order = parse_ntp_id(ntp_id)
+            if follow_version and self.is_obsolete():
+                self.load_from_db(col_id, self.data['updated_to'], follow_version=follow_version)
+
         except Exception as e:
             logging.error(e)
             sys.exit(1)
@@ -345,25 +374,16 @@ class NtpEntry:
                 new[k] = other.data[k]
         return (new, modif, miss)
 
-def get_file_type(headers):
-    doc_type = ''
-    debug = []
-    if 'Content-type' in headers:
-        debug.append(f"Content-type: {headers['Content-type']}")
-        if headers['Content-type'] == 'application/pdf':
-            doc_type = 'pdf'
-        elif headers['Content-type'].startswith('text/html'):
-            doc_type = 'html'
-        elif headers['Content-type'] == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-            doc_type = 'docx'
-    if 'Content-disposition' in headers:
-        debug.append(f"Content-Disposition: {headers['Content-Disposition']}")
-        headers['Content-disposition'] = headers['Content-disposition'].replace('769;','_').replace('8230;','_')
-        for item in headers['Content-disposition'].split(';'):
-            if 'filename' in item:
-                lb, file_name = item.split('=', maxsplit=1)
-                file_name = file_name.replace(' .', '.').lower()
-                logging.debug(file_name)
-                doc_type = os.path.splitext(file_name)[1].replace('.', '').replace('?=', '').replace('"', '')
-    logging.debug(f"HEADS {debug} {doc_type}")
-    return doc_type
+
+class NtpObsoleteEntry(NtpEntry):
+    ''' Subclasse to handle obsolete entries '''
+    def __init__(self):
+        super(NtpObsoleteEntry, self).__init__()
+        self.data['obsolete_version'] = True
+
+    def add_pointer(self, final_ntp_id, final_id):
+        self.data['id'] = final_ntp_id
+        self.data['update_to'] = final_ntp_id
+
+    def add_pointer_doc(self, final_doc):
+        self.add_pointer(final_doc.ntp_id, final_doc.data['id'])

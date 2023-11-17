@@ -88,17 +88,8 @@ def main():
             if item[1] == doc['_id'] or item[1] in DONE:
                 continue
             logging.debug(f"Found old version {item[1]} at {item[0]}, adding pointer to {doc['_id']}")
-
-            clean_col.replace_one(
-                {'_id': item[1]},
-                {
-                    'id': doc['id'],
-                    'obsolete_version': True,
-                    'updated_to': doc['_id']
-                },
-                upsert= True
-
-            )
+            new_obs_doc = ntp.NtpObsoleteEntry()
+            new_obs_doc.add_pointer(doc['_id'], doc['id'])
             DONE.add(item[1])
 
 
