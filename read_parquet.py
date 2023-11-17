@@ -32,7 +32,7 @@ def main():
     parser.add_argument('--debug', action='store_true', help="Add Debug information")
     parser.add_argument('-v','--verbose', action='store_true', help="Add Extra information")
     parser.add_argument('--group', action='store', help="outsiders|minors|insiders", required=True)
-    parser.add_argument('--upsert', action='store_true', help="update existing atom or insert a new one")
+    parser.add_argument('--update', action='store_true', help="update existing atom or insert a new one")
 
     parser.add_argument('codes_file', help="Columns sanitized names")
     parser.add_argument('pkt_file', help="Parquet file")
