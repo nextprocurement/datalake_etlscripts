@@ -169,6 +169,15 @@ class NtpEntry:
     def is_obsolete(self):
         return 'obsolete_version' in self.data and self.data['obsolete_version']
 
+    def make_obsolete(self, update_id):
+        new_data = {
+            '_id': self.ntp_id,
+            'id': self.data['id'],
+            'obsolete_version': True,
+            'updated_to': update_id
+        }
+        self.data = new_data
+
     def _find_previous_doc(self, col):
         found = False
         old_doc = {}
@@ -232,14 +241,17 @@ class NtpEntry:
     def load_from_db(self, col_id,  ntp_id, follow_version=False):
         try:
             self.data = col_id.find_one({'_id': ntp_id})
+            if not self.data:
+                self.data = {}
+                return False
             self.ntp_id = ntp_id
             self.ntp_order = parse_ntp_id(ntp_id)
             if follow_version and self.is_obsolete():
                 self.load_from_db(col_id, self.data['updated_to'], follow_version=follow_version)
-
         except Exception as e:
             logging.error(e)
-            sys.exit(1)
+            return False
+        return True
 
     def extract_urls(self):
         urls = {}
