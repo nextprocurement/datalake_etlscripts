@@ -154,7 +154,7 @@ def main():
     if args.id is not None:
         query = {'_id': args.id}
     else:
-        query = [{}]
+        query = [{'obsolete_version': {'$exists':0}}]
         if args.ini is not None:
             query.append({'_id':{'$gte': args.ini}})
         if args.fin is not None:
