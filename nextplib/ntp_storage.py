@@ -3,7 +3,10 @@ import sys
 import os.path
 import logging
 import re
+
 from os.path import join as opj
+from bson.regex import Regex
+
 import swiftclient as sw
 
 def is_in_range(ntp_id, id_range):
@@ -109,6 +112,14 @@ class NtpStorageGridFs (NtpStorage):
                 list.append(file.name)
         return list
 
+    def file_list_per_doc(self, files_col, ntp_id):
+        filename_pattern = re.compile (f"^{ntp_id}")
+        filename_rex = Regex.from_native(filename_pattern)
+        filename_rex.flags ^= re.UNICODE
+        file_list = []
+        for file in files_col.find({"filename": filename_rex}, projection=['_id', 'filename']):
+            file_list.append(file)
+        return file_list
 
 class NtpStorageSwift (NtpStorage):
     '''Class to manage Swift storage'''
@@ -132,7 +143,7 @@ class NtpStorageSwift (NtpStorage):
                 opj(self.data_prefix, file_name)
             )
             return True
-        except sw.ClientException as e:            
+        except sw.ClientException as e:
             logging.debug(e)
             if e.http_status == 404:
                 return False

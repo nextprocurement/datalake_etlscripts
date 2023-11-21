@@ -1,0 +1,118 @@
+#!/usr/bin/env python
+# coding: utf-8
+''' Script to purge documents at gridfs from obsolete versions
+    usage: purge_documents.py [-h] [--ini INI] [--fin FIN] [--id ID]
+
+    Download documents
+
+    optional arguments:
+       -h, --help            show this help message and exit
+       -v, --verbose         Add extra progress information
+       --ini INI             Initial document range
+       --fin FIN             Final document range
+       --id ID               Selected document id
+       --folder              Disk folder
+       --config              Configuration file. Default:secrets.yml
+       --backup              Save deleted file in backup bucket
+       --debug
+       -v --verbose
+'''
+import sys
+import argparse
+import logging
+import os
+import time
+from yaml import load, CLoader
+from nextplib import ntp_entry as ntp
+from nextplib import ntp_storage as ntpst
+from mmb_data.mongo_db_connect import Mongo_db
+
+def main():
+    ''' Main '''
+    parser = argparse.ArgumentParser(description='Download documents')
+    parser.add_argument('--ini', action='store', help='Initial document range')
+    parser.add_argument('--fin', action='store', help='Final document range')
+    parser.add_argument('--id', action='store', help='Selected document id')
+    parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
+    parser.add_argument('--debug',action='store_true', help='Extra debug information')
+    parser.add_argument('--no_backup', action='store_true', help='Do not cpy the deleted file on backup bucket')
+    parser.add_argument('--group', action='store', help='insiders|outsiders|minors')
+
+    args = parser.parse_args()
+    # Setup logging
+    logging.basicConfig(stream=sys.stdout, format='[%(asctime)s] %(levelname)s %(message)s', datefmt='%Y-%m-%d|%H:%M:%S')
+    if args.debug:
+        logging.getLogger().setLevel(10)
+    else:
+        logging.getLogger().setLevel(20)
+
+    # Config file
+    with open(args.config, 'r')  as config_file:
+        config = load(config_file, Loader=CLoader)
+
+    logging.info(f"Connecting to MongoDB at {config['MONGODB_HOST']}")
+
+    db_lnk = Mongo_db(
+        config['MONGODB_HOST'],
+        'nextprocurement',
+        False,
+        config['MONGODB_AUTH'],
+        credentials=config['MONGODB_CREDENTIALS'],
+        connect_db=True
+    )
+    if args.group in ['insiders', 'outsiders']:
+        incoming_col = db_lnk.db.get_collection('place')
+    elif args.group == 'minors':
+        incoming_col = db_lnk.db.get_collection('place_menores')
+    else:
+        logging.error(f"Group {args.group} invalid or missing")
+        sys.exit()
+    logging.info(f"Selecting collection {incoming_col.name}")
+
+    logging.info(f"Using GridFS storage at {config['MONGODB_HOST']}")
+    storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
+    backup_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments_backup'))
+    files_col = db_lnk.db.get_collection('downloadedDocuments.files')
+
+    if args.verbose:
+        logging.info("Getting obsolete ids...")
+
+    for ntp_id in (args.id, args.ini, args.fin):
+        if ntp_id is not None and not ntp.check_ntp_id(ntp_id):
+            logging.error(f'{ntp_id} is not a valid ntp id')
+            sys.exit()
+
+    if args.id is not None:
+        query = {'_id': args.id}
+    else:
+        query = [{'obsolete_version': {'$exists':1}}]
+        if args.ini is not None:
+            query.append({'_id':{'$gte': args.ini}})
+        if args.fin is not None:
+            query.append({'_id':{'$lte': args.fin}})
+        query = {'$and': query}
+
+    num_ids = 0
+    num_del = 0
+
+    for doc in list(incoming_col.find(query, {'_id':1, 'obsolete_version':1})):
+        ntp_id = doc['_id']
+        if not doc['obsolete_version']:
+            logging.warning(f"{ntp_id} is not marked as obsolete, skipping")
+        if args.verbose:
+            logging.info(f'Processing {ntp_id}')
+        for file in storage.file_list_per_doc(files_col, ntp_id):
+            if not args.no_backup:
+                backup_storage.file_store(file['filename'], storage.file_read(file['filename']))
+            storage.delete_file(file['filename'])
+            logging.info(f"Deleted {file['filename']}")
+            num_del += 1
+
+        num_ids += 1
+
+
+    if args.verbose:
+        logging.info(f"Processed {num_ids} entries")
+if __name__ == "__main__":
+    main()
