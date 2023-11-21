@@ -293,6 +293,7 @@ class NtpEntry:
         else:
             base = field
             url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
+
         if skip_early:
             if storage.type != 'gridfs':
                 logging.error(f"--skip_early only available for GridFS storage  (yet)")
@@ -355,6 +356,7 @@ class NtpEntry:
                         return STORE_OK, doc_type
                     return SKIPPED, doc_type
                 return UNWANTED_TYPE, doc_type
+
             logging.error(f"{HTTPStatus(response.status_code).phrase}: {url}")
             return response.status_code, HTTPStatus(response.status_code).phrase
         except requests.exceptions.SSLError as err:
@@ -366,6 +368,7 @@ class NtpEntry:
         except Exception as err:
             logging.error(err)
         return ERROR, 'unknown'
+
 
     def diff_document(self, other):
         ''' Find patch from two versions of atom'''
