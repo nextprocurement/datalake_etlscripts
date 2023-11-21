@@ -49,10 +49,12 @@ def main():
         incoming_col = db_lnk.db.get_collection('place')
         place_old_col = db_lnk.db.get_collection('place_old')
         cond = {'_id': {'$regex': 'ntp0'}}
+        ini_doc = 1
     elif args.group in ['minors']:
         incoming_col = db_lnk.db.get_collection('place_menores')
         place_old_col = db_lnk.db.get_collection('place_menores_old')
         cond = {'_id': {'$regex': 'ntp1'}}
+        ini_doc = 10000000
 
     max_id_c = incoming_col.aggregate(
         [
@@ -66,7 +68,7 @@ def main():
     else:
         logging.info(f"No records found of the required type on {incoming_col.name}")
 
-    for ntp_order in range(1, id_num):
+    for ntp_order in range(ini_doc, id_num):
         doc = ntp.NtpEntry()
         doc.ntp_order = ntp_order
         doc.set_ntp_id()
