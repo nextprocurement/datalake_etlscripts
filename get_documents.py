@@ -33,24 +33,24 @@ from nextplib import ntp_storage as ntpst
 from mmb_data.mongo_db_connect import Mongo_db
 
 FIELDS_TO_SKIP = [
-        'id',
-        'LocatedContractingParty_WebsiteURI',
-        'Entidad_Adjudicadora/URL_perfil_de_contratante',
-        'Entidad_Adjudicadora/Sitio_Web',
-        'Proceso_de_licitacion/Medio_de_Presentacion_de_Ofertas_Electronicas'
+    'id',
+    'LocatedContractingParty_WebsiteURI',
+    'Entidad_Adjudicadora/URL_perfil_de_contratante',
+    'Entidad_Adjudicadora/Sitio_Web',
+    'Proceso_de_licitacion/Medio_de_Presentacion_de_Ofertas_Electronicas'
 ]
 
 STORE_DOC_NAMES = {
-        'Datos_Generales_del_Expediente/Pliego_de_Clausulas_Administrativas/URI': 'Pliego_clausulas_administrativas_URI',
-        'Datos_Generales_del_Expediente/Pliego_de_Prescripciones_Tecnicas/URI': 'Pliego_Prescripciones_tecnicas_URI',
-        'Datos_Generales_del_Expediente/Anexos_a_los_Pliegos/URI': 'Anexos_pliegos_URI',
-        'Otros_documentos_publicados/Documento_Publicado/URI': 'Documento_Publicado_URI',
-        'Datos_Generales_del_Expediente/Pliego_de_Prescripciones_Tecnicas/Archivo': 'Pliego_Prescripciones_tecnicas_Archivo'
-        }
+    'Datos_Generales_del_Expediente/Pliego_de_Clausulas_Administrativas/URI': 'Pliego_clausulas_administrativas_URI',
+    'Datos_Generales_del_Expediente/Pliego_de_Prescripciones_Tecnicas/URI': 'Pliego_Prescripciones_tecnicas_URI',
+    'Datos_Generales_del_Expediente/Anexos_a_los_Pliegos/URI': 'Anexos_pliegos_URI',
+    'Otros_documentos_publicados/Documento_Publicado/URI': 'Documento_Publicado_URI',
+    'Datos_Generales_del_Expediente/Pliego_de_Prescripciones_Tecnicas/Archivo': 'Pliego_Prescripciones_tecnicas_Archivo',
+    'Publicaciones_Oficiales/Documento_Publicado/URI': 'Publicaciones_oficiales_URI'
+}
 
 def main():
     ''' Main '''
-
     parser = argparse.ArgumentParser(description='Download documents')
     parser.add_argument('--replace', action='store_true', help='Replace existing files')
     parser.add_argument('--ini', action='store', help='Initial document range')
@@ -67,7 +67,7 @@ def main():
     parser.add_argument('--allow_redirects', action='store_true', help='Allow for automatic redirects on HTTP 301 302')
     parser.add_argument('--skip_early', action='store_true', help='Skip immediately if any file for the corresponding field is already stored')
     # parser.add_argument('--no_verify', action='store_true', help='Do not verify certificates')
-    parser.add_argument('--type', action='store', help='tipo: mayores|menores', default='mayores')
+    parser.add_argument('--group', action='store', help='tipo: mayores|menores', default='mayores')
 
     args = parser.parse_args()
     # Setup logging
@@ -91,11 +91,13 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    if args.type=='mayores':
+    if args.group in ['insiders', 'outsiders']:
         incoming_col = db_lnk.db.get_collection('place')
-    else:
+    elif args.group == 'minors':
         incoming_col = db_lnk.db.get_collection('place_menores')
-
+    else:
+        logging.error(f"Group {args.group} invalid or missing")
+        sys.exit()
 
     if not args.scan_only:
         if args.verbose:
@@ -160,6 +162,7 @@ def main():
         if args.fin is not None:
             query.append({'_id':{'$lte': args.fin}})
         query = {'$and': query}
+
     num_ids = 0
     last_server = ''
     for doc in list(incoming_col.find(query, {'_id':1})):
@@ -175,21 +178,27 @@ def main():
             else:
                 url_base = url_field
                 url_index = -1
+
             if url_base in FIELDS_TO_SKIP:
                 logging.debug(f"Skipping {url_base}")
                 continue
+
             if args.debug:
                 logging.debug(f"{url_base}: {ntp_doc.data[url_base]}")
+
             if args.delay and ntp_doc.get_server(url_field) == last_server:
                 time.sleep(args.delay)
             else:
                 last_server = ntp_doc.get_server(url_field)
-            # print(f"{last_server}")
+
             try:
-                file_name = STORE_DOC_NAMES[url_field]
+                file_name = STORE_DOC_NAMES[url_base]
+                if url_index != -1:
+                    file_name += f":{url_index}"
             except Exception as e:
                 logging.error(e)
                 continue
+
             results = ntp_doc.store_document(
                 url_field,
                 file_name,
@@ -199,6 +208,7 @@ def main():
                 allow_redirects=args.allow_redirects,
                 skip_early=args.skip_early
             )
+
             if args.verbose:
                 if results[0] == ntp.SKIPPED:
                     logging.info(f"{file_name} skipped, File already exists and --replace not set or --scan_only")
