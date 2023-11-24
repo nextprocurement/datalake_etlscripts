@@ -37,7 +37,8 @@ FIELDS_TO_SKIP = [
     'LocatedContractingParty_WebsiteURI',
     'Entidad_Adjudicadora/URL_perfil_de_contratante',
     'Entidad_Adjudicadora/Sitio_Web',
-    'Proceso_de_licitacion/Medio_de_Presentacion_de_Ofertas_Electronicas'
+    'Proceso_de_licitacion/Medio_de_Presentacion_de_Ofertas_Electronicas',
+    'Entidad_Adjudicadora/Calle'
 ]
 
 STORE_DOC_NAMES = {
@@ -46,7 +47,13 @@ STORE_DOC_NAMES = {
     'Datos_Generales_del_Expediente/Anexos_a_los_Pliegos/URI': 'Anexos_pliegos_URI',
     'Otros_documentos_publicados/Documento_Publicado/URI': 'Documento_Publicado_URI',
     'Datos_Generales_del_Expediente/Pliego_de_Prescripciones_Tecnicas/Archivo': 'Pliego_Prescripciones_tecnicas_Archivo',
-    'Publicaciones_Oficiales/Documento_Publicado/URI': 'Publicaciones_oficiales_URI'
+    'Publicaciones_Oficiales/Documento_Publicado/URI': 'Publicaciones_oficiales_URI',
+    'Condiciones_de_Licitacion/Programas_de_Financiacion': 'Programas_de_Financiacion',
+    'Datos_Generales_del_Expediente/Numero_de_Expediente': 'Numero_de_Expediente',
+    'Datos_Generales_del_Expediente/Objeto_del_Contrato': 'Objeto_del_Contrato',
+    'Plazo_de_Presentacion_de_Oferta/Observaciones': 'Plazo_de_Presentacion_Observaciones',
+    'Requisitos_de_Participacion/Criterio_de_Evaluacion_Economica_Financiera/Descripcion': 'Requisitos_de_Participacion_Evaluacion_Economica_Financiera',
+    'Requisitos_de_Participacion/Criterio_de_Evaluacion_Tecnica/Descripcion': 'Requisitos_de_Participacion_Evaluacion_Tecnica'
 }
 
 def main():
@@ -196,7 +203,7 @@ def main():
                 if url_index != -1:
                     file_name += f":{url_index}"
             except Exception as e:
-                logging.error(e)
+                logging.error(f"Missing field {e}")
                 continue
 
             results = ntp_doc.store_document(
