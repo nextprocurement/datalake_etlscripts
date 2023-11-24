@@ -56,6 +56,12 @@ STORE_DOC_NAMES = {
     'Requisitos_de_Participacion/Criterio_de_Evaluacion_Tecnica/Descripcion': 'Requisitos_de_Participacion_Evaluacion_Tecnica'
 }
 
+SKIP_SERVERS =[
+    'www.madrid.org',
+    'www.contratacion.euskadi.eus',
+    'contractaciopublica.gencat.cat'
+]
+
 def main():
     ''' Main '''
     parser = argparse.ArgumentParser(description='Download documents')
@@ -74,6 +80,7 @@ def main():
     parser.add_argument('--allow_redirects', action='store_true', help='Allow for automatic redirects on HTTP 301 302')
     parser.add_argument('--skip_early', action='store_true', help='Skip immediately if any file for the corresponding field is already stored')
     # parser.add_argument('--no_verify', action='store_true', help='Do not verify certificates')
+    parser.add_argument('--skip_bad_servers', action='store_true', help='Skip servers with usual timeouts or missing documents')
     parser.add_argument('--group', action='store', help='tipo: mayores|menores', default='mayores')
 
     args = parser.parse_args()
@@ -197,6 +204,10 @@ def main():
                 time.sleep(args.delay)
             else:
                 last_server = ntp_doc.get_server(url_field)
+
+            if args.skip_bad_servers and ntp_doc.get_server(url_field) in SKIP_SERVERS:
+                logging.debug(f"Skipping server")
+                continue
 
             try:
                 file_name = STORE_DOC_NAMES[url_base]
