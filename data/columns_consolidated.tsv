@@ -169,7 +169,7 @@
 "Fecha de Publicación (Publicaciones oficiales)"	"Publicaciones_Oficiales/Fecha_de_Publicacion"	"string"
 "Medio de Publicación (Publicaciones oficiales)"	"Publicaciones_Oficiales/Medio_de_Publicacion"	"string"
 "Tipo de Anuncio"	"Publicaciones_oficiales/Tipo_de_Anuncio"	"string"
-"Tipo de Anuncio (Publicaciones oficiales)"	"Publicaciones_oficiales/Tipo_de_Anuncio"	"string"
+"Tipo de Anuncio (Publicaciones oficiales)"	"Publicaciones_Oficiales/Tipo_de_Anuncio"	"string"
 "Tipo de documento publicado (Publicaciones oficiales)"	"Publicaciones_Oficiales/Tipo_de_Documento_Publicado"	"string"
 "Condiciones de admisión (código) (Requisitos de Participación del Lote)"	"Requisitos_de_Participacion_del_Lote/Condiciones_de_Admision/Codigo"	"string"
 "Condiciones de admisión (Requisitos de Participación del Lote)"	"Requisitos_de_Participacion_del_Lote/Condiciones_de_Admision/Descripcion"	"string"
