@@ -2,6 +2,19 @@
 # coding: utf-8
 ''' Script to add pointers to final versions
     usage: refresh_versions.py [-h] [--ini INI] [--fin FIN] [--id ID]
+                        [--group GROUP] [--config CONFIG] [-v] [--debug]
+
+Clean versions
+
+options:
+  -h, --help       show this help message and exit
+  --ini INI        Initial document range
+  --fin FIN        Final document range
+  --id ID          Selected document id
+  --group GROUP    Type of procurement
+  --config CONFIG  Configuration file (default: secrets.yml)
+  -v, --verbose    Extra progress information
+  --debug          Extra debug information
 '''
 import sys
 import argparse
@@ -27,12 +40,12 @@ def print_stats(lits):
 def main():
     ''' Main '''
 
-    parser = argparse.ArgumentParser(description='Download documents')
+    parser = argparse.ArgumentParser(description='Mark final and obsolete versions')
     parser.add_argument('--ini', action='store', help='Initial document range')
     parser.add_argument('--fin', action='store', help='Final document range')
     parser.add_argument('--id', action='store', help='Selected document id')
     parser.add_argument('--group', action='store', help='Type of procurement')
-    parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
+    parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default: secrets.yml)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
 

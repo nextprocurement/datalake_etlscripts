@@ -1,17 +1,23 @@
 #!/usr/bin/env python
 # coding: utf-8
 ''' Script to extract entities (Licitadores / Adjudicatarios)
-    usage: get_entities.py [-h] [--update] [--ini INI] [--fin FIN] [--id ID]
+    usage: get_entities.py [-h] [--replace] [--ini INI] [--fin FIN] [--id ID]
+                            [--config CONFIG] [-v] [--debug]
+                            [--group GROUP] [--drop]
 
-    optional arguments:
-       -h, --help            show this help message and exit
-       -v, --verbose         Add extra progress information
-       --ini INI             Initial document range
-       --fin FIN             Final document range
-       --id ID               Selected document id
-       --config              Configuration file. Default:secrets.yml
-       --debug
-       -v --verbose
+Download Entities
+
+options:
+  -h, --help       show this help message and exit
+  --replace        Replace existing files
+  --ini INI        Initial document range
+  --fin FIN        Final document range
+  --id ID          Selected document id
+  --config CONFIG  Configuration file (default: secrets.yml)
+  -v, --verbose    Extra progress information
+  --debug          Extra debug information
+  --group GROUP    ousiders|minors|insiders
+  --drop           Delete previous data
 '''
 import sys
 import argparse

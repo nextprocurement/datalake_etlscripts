@@ -1,5 +1,25 @@
 #!/usr/bin/env python
 # coding: utf-8
+''' Read parquet files into mongodb DB
+    usage: read_parquet.py [-h] [--drop] [--config CONFIG] [--debug] [-v]
+                            --group GROUP [--update]
+                            codes_file pkt_file
+
+Parse NextProcurement parquets
+
+positional arguments:
+  codes_file       Column sanitized names
+  pkt_file         Parquet file
+
+options:
+  -h, --help       show this help message and exit
+  --drop           Clean MongoDB collection
+  --config CONFIG  Configuration file
+  --debug          Add Debug information
+  -v, --verbose    Add Extra information
+  --group GROUP    outsiders|minors|insiders
+  --update         update existing atom or insert a new one
+'''
 
 import sys
 import argparse
@@ -11,21 +31,6 @@ from nextplib import ntp_entry as ntp
 from mmb_data.mongo_db_connect import Mongo_db
 
 def main():
-    # usage: read_parquet.py [-h] [--drop] codes_file pkt_file
-
-    # Parse NextProcurement parquets
-
-    # positional arguments:
-    #   codes_file  Columns sanitized names
-    #   pkt_file    Parquet file
-
-    # optional arguments:
-    #   -h, --help  show this help message and exit
-    #   --drop      Clean MongoDB collection
-    #   --config    Configuration file (default:secrets.yml)
-    #   --debug     Add Debug information from different components
-    #   -v --verbose Add additional information
-
     parser = argparse.ArgumentParser(description='Parse NextProcurement parquets')
     parser.add_argument('--drop', action='store_true', help="Clean MongoDB collection")
     parser.add_argument('--config', action='store', help="Configuration file", default="secrets.yml")

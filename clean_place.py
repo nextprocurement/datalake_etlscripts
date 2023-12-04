@@ -60,13 +60,13 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    if args.group == 'minors':
-        logging.info("Type of procurement set to 'minors'")
-        incoming_col = db_lnk.db.get_collection('place_menores_raw')
-        clean_col = db_lnk.db.get_collection('place_menores_clean')
-    else:
-        incoming_col = db_lnk.db.get_collection('place_raw')
-        clean_col = db_lnk.db.get_collection('place_clean')
+
+    try:
+        incoming_col = db_lnk.db.get_collection(config[f'{args.group}_col_prefix'] + '_raw')
+        clean_col = db_lnk.db.get_collection(config[f'{args.group}_col_prefix'])
+    except KeyError as e:
+        logging.error(e)
+        sys.exit()
 
     for ntp_id in (args.id, args.ini, args.fin):
         if ntp_id is not None and not ntp.check_ntp_id(ntp_id):

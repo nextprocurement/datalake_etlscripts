@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-''' Script to build summary data for API
+''' Script to build summary data for API /info endpoint
 '''
 import sys
 import argparse
@@ -43,12 +43,12 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    if args.group in ['outsiders', 'insiders']:
-        incoming_col = db_lnk.db.get_collection('place')
-        data_store = 'place'
-    else:
-        incoming_col = db_lnk.db.get_collection('place_menores')
-        data_store = 'place_menores'
+
+    try:
+        incoming_col = db_lnk.db.get_collection(config[f'{args.group}_col_prefix'])
+        data_store = config[f'{args.group}_col_prefix']
+    except KeyError as e:
+        logging.error(e)
 
     data = {}
     data['total_documents'] = incoming_col.estimated_document_count()

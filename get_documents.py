@@ -1,25 +1,31 @@
 #!/usr/bin/env python
 # coding: utf-8
-''' Script to load PDF documents onto data_lake, takes input data from MongoDB
-    usage: get_documents.py [-h] [--update] [--ini INI] [--fin FIN] [--id ID]
-                             [--where {disc,gridfs,swift}]
+''' Script to load inlined documents onto data_lake, takes input data from MongoDB
+    usage: get_documents.py [-h] [-v] [--replace] [--ini INI] [--fin FIN] [--id ID]
+                                [--where {disk,gridfs,swift}] [--folder FOLDER]
+                                [--config CONFIG] [--debug] [--scan_only] [--delay DELAY]
+                                [--container] [--allow_redirects] [--skip_early]
+                                [--skip_bad_servers] [--group GROUP]
     Download documents
 
-    optional arguments:
-       -h, --help            show this help message and exit
-       -v, --verbose         Add extra progress information
-       --replace             Replace existing files
-       --ini INI             Initial document range
-       --fin FIN             Final document range
-       --id ID               Selected document id
-       --where {disk,gridfs,swift}
-                             Selected storage (disk|gridfs|swift). Default:disk
-       --folder              Disk folder
-       --config              Configuration file. Default:secrets.yml
-       --debug
-       -v --verbose
-       --scan_only           Scan for presence and detect file type, do not download
-       --delay               Add a time delay between calls to the same server
+    options:
+        -h, --help show this help message and exit
+        --replace Replace existing files
+        --ini INI Initial document range
+        --fin FIN Final document range
+        --id ID Selected document id
+        --where {disk,gridfs,swift} Selected storage (disk|gridfs|swift)
+        --folder FOLDER Selected Disk/Swift folder
+        --config CONFIG Configuration file (default:secrets.yml)
+        -v, --verbose Extra progress information
+        --debug Extra debug information
+        --scan_only Scan URL for doc type, do not download (implies --debug)
+        --delay DELAY Time delay between requests to same server
+        --container Swift container to use
+        --allow_redirects Allow for automatic redirects on HTTP 301 302
+        --skip_early Skip immediately if any file for the corresponding field is already stored
+        --skip_bad_servers Skip servers with usual timeouts or missing documents
+        --group GROUP insiders|outsiders|minors
 '''
 import sys
 import argparse
@@ -70,7 +76,7 @@ def main():
     parser.add_argument('--ini', action='store', help='Initial document range')
     parser.add_argument('--fin', action='store', help='Final document range')
     parser.add_argument('--id', action='store', help='Selected document id')
-    parser.add_argument('--where', action='store', default='disk', choices=['disk', 'gridfs', 'swiºft'], help='Selected storage (disk|gridfs|swift)')
+    parser.add_argument('--where', action='store', default='disk', choices=['disk', 'gridfs', 'swift'], help='Selected storage (disk|gridfs|swift)')
     parser.add_argument('--folder', action='store', help='Selected Disk/Swift folder')
     parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
@@ -80,9 +86,8 @@ def main():
     parser.add_argument('--container', action='store_true', help="Swift container to use", default='PLACE')
     parser.add_argument('--allow_redirects', action='store_true', help='Allow for automatic redirects on HTTP 301 302')
     parser.add_argument('--skip_early', action='store_true', help='Skip immediately if any file for the corresponding field is already stored')
-    # parser.add_argument('--no_verify', action='store_true', help='Do not verify certificates')
     parser.add_argument('--skip_bad_servers', action='store_true', help='Skip servers with usual timeouts or missing documents')
-    parser.add_argument('--group', action='store', help='tipo: mayores|menores', default='mayores')
+    parser.add_argument('--group', action='store', help='Group: insiders|outsiders|minors', default='mayores')
 
     args = parser.parse_args()
     # Setup logging
@@ -207,7 +212,7 @@ def main():
                 last_server = ntp_doc.get_server(url_field)
 
             if args.skip_bad_servers and ntp_doc.get_server(url_field) in SKIP_SERVERS:
-                logging.info(f"Server {ntp_doc.get_server(url_field) in bad_servers list, skipping")
+                logging.info(f"Server {ntp_doc.get_server(url_field)} in bad_servers list, skipping")
                 continue
 
             try:

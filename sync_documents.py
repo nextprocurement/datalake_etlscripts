@@ -1,24 +1,29 @@
 #!/usr/bin/env python
 # coding: utf-8
 ''' Script to load PDF documents onto data_lake, takes input data from MongoDB
-    usage: get_documents.py [-h] [--update] [--ini INI] [--fin FIN] [--id ID]
-                             [--where {disc,gridfs,swift}]
-    Download documents
+    usage: sync_documents.py [-h] [--ini INI] [--fin FIN] [--id ID]
+                        [-i FOLDER_IN] [-o FOLDER_OUT] [--config CONFIG]
+                         [--delete] [--replace] [-v] [--debug] [--check_only]
 
-    optional arguments:
-       -h, --help            show this help message and exit
-       -v, --verbose         Add extra progress information
-       -i --folder_in        Origin folder as container@storage:folder
-       -o --folder_out       Destination folder as container@storage:folder
-       --replace             Replace existing files at Destination
-       --delete              Delete files on Destination absent at Origin
-       --ini INI             Initial document range
-       --fin FIN             Final document range
-       --id ID               Selected document id
-       --config              Configuration file. Default:secrets.yml
-       --debug
-       -v --verbose
+Sync documents between storages
+
+options:
+  -h, --help            show this help message and exit
+  --ini INI             Initial document range
+  --fin FIN             Final document range
+  --id ID               Selected document id
+  -i FOLDER_IN, --folder_in FOLDER_IN
+                        Selected Origin (local folder|gridfs:|container@swift:folder)
+  -o FOLDER_OUT, --folder_out FOLDER_OUT
+                        Selected Destination (local folder|gridfs:|container@swift:folder)
+  --config CONFIG       Configuration file (default;secrets.yml)
+  --delete              Delete files at destination that are not present at Origin
+  --replace             Replace existing files
+  -v, --verbose         Extra progress information
+  --debug               Extra debug information
+  --check_only          Check only, no transfer
 '''
+
 import sys
 import argparse
 import logging

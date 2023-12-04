@@ -2,20 +2,21 @@
 # coding: utf-8
 ''' Script to purge documents at gridfs from obsolete versions
     usage: purge_documents.py [-h] [--ini INI] [--fin FIN] [--id ID]
+                        [--config CONFIG] [-v] [--debug] [--no_backup]
+                        [--group GROUP]
 
-    Download documents
+Download documents
 
-    optional arguments:
-       -h, --help            show this help message and exit
-       -v, --verbose         Add extra progress information
-       --ini INI             Initial document range
-       --fin FIN             Final document range
-       --id ID               Selected document id
-       --folder              Disk folder
-       --config              Configuration file. Default:secrets.yml
-       --backup              Save deleted file in backup bucket
-       --debug
-       -v --verbose
+options:
+  -h, --help       show this help message and exit
+  --ini INI        Initial document range
+  --fin FIN        Final document range
+  --id ID          Selected document id
+  --config CONFIG  Configuration file (default: secrets.yml)
+  -v, --verbose    Extra progress information
+  --debug          Extra debug information
+  --no_backup      Do not copy the deleted file on backup bucket
+  --group GROUP    insiders|outsiders|minors
 '''
 import sys
 import argparse
@@ -33,10 +34,10 @@ def main():
     parser.add_argument('--ini', action='store', help='Initial document range')
     parser.add_argument('--fin', action='store', help='Final document range')
     parser.add_argument('--id', action='store', help='Selected document id')
-    parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
+    parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default:secrets.yml)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
-    parser.add_argument('--no_backup', action='store_true', help='Do not cpy the deleted file on backup bucket')
+    parser.add_argument('--no_backup', action='store_true', help='Do not copy the deleted file on backup bucket')
     parser.add_argument('--group', action='store', help='insiders|outsiders|minors')
 
     args = parser.parse_args()
