@@ -59,7 +59,8 @@ STORE_DOC_NAMES = {
 SKIP_SERVERS =[
     'www.madrid.org',
     'www.contratacion.euskadi.eus',
-    'contractaciopublica.gencat.cat'
+    'contractaciopublica.gencat.cat',
+    'contractaciopublica.cat'
 ]
 
 def main():
@@ -206,7 +207,7 @@ def main():
                 last_server = ntp_doc.get_server(url_field)
 
             if args.skip_bad_servers and ntp_doc.get_server(url_field) in SKIP_SERVERS:
-                logging.debug(f"Skipping server")
+                logging.info(f"Server {ntp_doc.get_server(url_field) in bad_servers list, skipping")
                 continue
 
             try:
