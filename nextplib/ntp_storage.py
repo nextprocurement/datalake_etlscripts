@@ -65,7 +65,7 @@ class NtpStorageDisk (NtpStorage):
     def file_exists(self, file_name):
         return os.path.exists(opj(self.data_dir, file_name))
 
-    def file_list(self, id_range=None):
+    def file_list(self, id_range=None, set_Debug=False):
         file_list = []
         for file in os.listdir(self.data_dir):
             if id_range is None or is_in_range(get_ntpid(file), id_range):
@@ -104,9 +104,8 @@ class NtpStorageGridFs (NtpStorage):
             return self.gridfs.exists({'filename':rgx})
 
 
-    def file_list(self, id_range=None):
+    def file_list(self, id_range=None, set_debug=False):
         list = []
-#        for file in self.gridfs.list():
         for file in self.gridfs.find():
             if id_range is None or is_in_range(get_ntpid(file.name), id_range):
                 list.append(file.name)
@@ -206,11 +205,14 @@ class NtpStorageSwift (NtpStorage):
             logging.error(f"deletion of {file_name} failed")
         return 0
 
-    def file_list(self, id_range=None):
+    def file_list(self, id_range=None, set_debug=False):
+        logging.getLogger().setLevel(20)
         head, files = self.connection.get_container(
             self.container,
             full_listing=True
         )
+        if set_debug:
+            logging.getLogger().setLevel(10)
         list = []
         for file in files:
             if not file['name'].startswith(self.data_prefix):
