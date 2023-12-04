@@ -205,10 +205,9 @@ def main():
         logging.info(f"id_range: {get_id_range(args)}")
 
     from_files = set(from_storage.file_list(id_range=get_id_range(args)))
+    logging.info(f"Origin: {len(from_files)} Files available at {args.folder_in} ")
 
     to_files = set(to_storage.file_list(id_range=get_id_range(args)))
-
-    logging.info(f"Origin: {len(from_files)} Files available at {args.folder_in} ")
     logging.info(f"Destination: {len(to_files)} Files available at {args.folder_out} ")
 
     new_files = []
