@@ -5,15 +5,10 @@ export EXEDIR=$BASEDIR/etlscripts
 #Agregados
 for d in $DATADIR/outsiders/*renamed.parquet
 do 
-	python $EXEDIR/read_parquet.py -v --group outsiders --config $EXEDIR/secrets_mdb.yml --update $EXEDIR/columns_consolidated.tsv $d >> logs/update_dec23_outsiders.log
+	python $EXEDIR/read_parquet.py -v --group outsiders --config $EXEDIR/secrets_mdb.yml --update $EXEDIR/data/columns_consolidated.tsv $d >> logs/update_dec23_outsiders.log
 done
-#Menores
-#for d in $DATADIR/minors/*renamed.parquet
-#do 
-#	python $EXEDIR/read_parquet.py -v --debug --group minors --config $EXEDIR/secrets_mdb.yml --update $EXEDIR/columns_consolidated.tsv $d >> logs/update_dec23_minors.log
-#done
 #insiders
 for d in $DATADIR/insiders/*renamed.parquet
 do 
-	python $EXEDIR/read_parquet.py -v  --debug --group insiders --config $EXEDIR/secrets_mdb.yml --update $EXEDIR/columns_consolidated.tsv $d >> logs/update_dec23_insiders.log
+	python $EXEDIR/read_parquet.py -v  --debug --group insiders --config $EXEDIR/secrets_mdb.yml --update $EXEDIR/data/columns_consolidated.tsv $d >> logs/update_dec23_insiders.log
 done
