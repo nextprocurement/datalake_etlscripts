@@ -109,7 +109,7 @@ def main():
         data_row = data_table.iloc[i].to_dict().copy()
         new_data = ntp.NtpEntry()
         new_data.load_data(id_num + 1, ntp.parse_parquet(data_row, new_cols))
-        tmp_num = new_data.commit_to_db(incoming_col, upsert=args.upsert)
+        tmp_num = new_data.commit_to_db(incoming_col, update=args.update)
         id_num = max(tmp_num, id_num)
         if args.verbose:
             logging.info(f"Processed {new_data.ntp_id}")
