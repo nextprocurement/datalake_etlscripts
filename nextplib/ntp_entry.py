@@ -195,7 +195,7 @@ class NtpEntry:
             if nl:
                 new_tmp = [item[0:19] for item in self.data['updated']]
             else:
-                new_tmp = vers['updated'][0:19]
+                new_tmp = self.data['updated'][0:19]
 
             if vl and nl or not vl and not nl:
                 found = vers_tmp == new_tmp
