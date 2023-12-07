@@ -131,8 +131,9 @@ def main():
 
     logging.info(f"Found versioned entries: {[str(k) + ':' + str(v) for k,v in sorted (STATS.items())]}")
 
-    logging.info("Dropping patch collection")
-    clean_col.delete_many({})
+    if (args.drop:
+        logging.info("Dropping patch collection")
+        clean_col.delete_many({})
 
     logging.info(f"Start processing, {len(LICS)} place ids")
     num_ids = 0
