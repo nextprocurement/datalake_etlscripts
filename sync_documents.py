@@ -211,7 +211,7 @@ def main():
 
     from_files = set(from_storage.file_list(
         id_range=get_id_range(args),
-        set_degug=args.debug
+        set_debug=args.debug
         ))
     logging.info(f"Origin: {len(from_files)} Files available at {args.folder_in} ")
 
