@@ -4,6 +4,7 @@ import re
 import os.path
 import logging
 from urllib.parse import urlparse
+from datetime import datetime
 from unidecode import unidecode
 import numpy as np
 import pandas as pd
@@ -31,6 +32,26 @@ def get_new_dbfield(col):
         m = re.search(r'(.*)_\((.*)\)', mod_col)
         mod_col = f"{m[2]}/{m[1]}"
     return unidecode(mod_col)
+
+def get_last_order(group, col):
+    ''' Get order of last document in collection'''
+    if group in ['outsiders', 'insiders']:
+        cond = {'_id': {'$regex': 'ntp0'}}
+    else:
+        cond = {'_id': {'$regex': 'ntp1'}}
+
+    max_id = list(col.aggregate(
+        [
+            {'$match': cond},
+            {'$group':{'_id':'max_id', 'value':{'$max': '$_id'}}}
+        ]
+    ))
+    if max_id:
+        id_num = parse_ntp_id(max_id[0]['value'])
+    else:
+        logging.info("No records found")
+        id_num = cts.MIN_ORDER(group)
+    return id_num
 
 def parse_parquet(pd_data_row, new_cols):
     ''' Parse data Pandas' data row read from a parquet file
@@ -63,7 +84,6 @@ def parse_parquet(pd_data_row, new_cols):
             pd_data_row[col] = ''
         try:
             if new_cols.loc[col]['DBFIELD'] in new_data:
-                r = True
                 if not isinstance(new_data[new_cols.loc[col]['DBFIELD']], list):
                     new_data[new_cols.loc[col]['DBFIELD']] = [new_data[new_cols.loc[col]['DBFIELD']]]
                     logging.debug(f"WARNING: multiple values found for {new_cols.loc[col]['DBFIELD']}, appending")
@@ -76,6 +96,53 @@ def parse_parquet(pd_data_row, new_cols):
         new_data['data_model'] = 'v2023'
     return new_data
 
+def get_versions(new_id, col):
+    ''' get list versions of the incoming document'''
+    versions = []
+    for vers in col.find(
+        {'id': new_id},
+        projection={
+            '_id': 1,
+            'id': 1,
+            'obsolete_version':1,
+            'updated':1
+        }):
+        if 'obsolete_version' in vers and vers['obsolete_version']:
+            versions.append({
+                '_id': vers['_id'],
+                'id': vers['id'],
+                'status': 'obsolete'
+            })
+        else:
+            if not isinstance(vers['updated'], list):
+                vers['updated'] = [vers['updated']]
+            for update in vers['updated']:
+                versions.append({
+                    '_id': vers['_id'],
+                    'id': vers['id'],
+                    'status': 'active',
+                    'updated': update
+                })
+
+    return versions
+
+def get_last_active_version(new_data, versions):
+    ''' Get last active document for tender'''
+    last_vers = {'_id': 'ntp00000000'}
+    for vers in versions:
+        if vers['status'] == 'obsolete':
+            continue
+        found = exists_update(new_data['updated'], vers['updated'])
+        if found:
+            last_vers = vers
+            break
+        elif vers['_id'] > last_vers['_id']:
+            last_vers = vers
+    if last_vers['_id'] == 'ntp00000000':
+        return False
+    return last_vers
+
+# Crawling utils
 
 def check_meta_refresh(url, contents):
     """Check for redirection as http-equiv:refresh tags"""
@@ -137,33 +204,50 @@ def get_file_name(ntp_id, field, ext):
     ''' Composes file name for stored documents'''
     return f"{ntp_id}_{field}.{ext}"
 
+def exists_update(new_update, existing_update):
+    '''Check if new_update exists in previous'''
+    if isinstance(existing_update, datetime):
+        existing_update = existing_update.strftime('%Y-%m-%d %H:%M:%S')
+    vl = isinstance(existing_update, list)
+    if isinstance(new_update, datetime):
+        new_update = new_update.strftime('%Y-%m-%d %H:%M:%S')
+    nl = isinstance(new_update, list)
+    # Comparison limited to YYYY-MM-DD HH:MM:SS to avoid format issues
+    if vl:
+        vers_tmp = [item[0:19] for item in existing_update]
+    else:
+        vers_tmp = existing_update[0:19]
+
+    if nl:
+        new_tmp = [item[0:19] for item in new_update]
+    else:
+        new_tmp = new_update[0:19]
+
+    if vl and nl or not vl and not nl:
+        found = vers_tmp == new_tmp
+    elif nl:
+        found = vers_tmp in new_tmp
+    else:
+        found = new_tmp in vers_tmp
+
+    return found
+
+def merge_updates(new_update, old_updates):
+    updates = set()
+    if not isinstance(new_update, list):
+        new_update = [new_update]
+    for update in old_updates + new_update:
+        if isinstance(update, datetime):
+            update = update.strftime('%Y-%m-%d %H:%M:%S')
+        updates.add(update[0:19])
+    return sorted(list(updates))
+
 def find_previous_doc(data, col):
     '''Finds previous doc if exists that matched new document'''
     found = False
     old_doc = {}
     for vers in col.find({'id': data['id']}):
-        if isinstance(vers['updated'], datetime):
-            vers['updated'] = vers['updated'].strftime('%Y-%m-%d %H:%M:%S')
-        vl = isinstance(vers['updated'], list)
-        nl = isinstance(self.data['updated'], list)
-        # Comparison limited to YYYY-MM-DD HH:MM:SS to avoid format issues
-        if vl:
-            vers_tmp = [item[0:19] for item in vers['updated']]
-        else:
-            vers_tmp = vers['updated'][0:19]
-
-        if nl:
-            new_tmp = [item[0:19] for item in data['updated']]
-        else:
-            new_tmp = data['updated'][0:19]
-
-        if vl and nl or not vl and not nl:
-            found = vers_tmp == new_tmp
-        elif nl:
-            found = vers_tmp in new_tmp
-        else:
-            found = new_tmp in vers_tmp
-
+        found = exists_update(data['updated'], vers['updated'])
         logging.debug(f"{vers['updated']} {data['updated']} {found}")
         logging.debug(f"{vers_tmp} {new_tmp} {found}")
 

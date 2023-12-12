@@ -9,10 +9,15 @@ from nextplib import ntp_constants as cts, ntp_utils as nu
 
 class NtpEntry:
     '''Class to manage ntp documents'''
-    def __init__(self):
+    def __init__(self, ntp_id=None, place_id=None):
         self.ntp_order = 0
-        self.ntp_id = ''
-        self.data = {}
+        self.ntp_id = ntp_id
+        self.data = {
+            '_id': ntp_id,
+            'id': place_id
+        }
+        if ntp_id is not None:
+            self.order_from_id()
 
     def load_data(self, ntp_order, data):
         ''' Load data dictionary into instance'''

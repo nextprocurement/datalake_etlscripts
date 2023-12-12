@@ -18,3 +18,10 @@ UNWANTED_TYPE = 2
 STORE_OK = 200
 SSL_ERROR = 3
 ERROR = -1
+
+# MIN_ORDER
+MIN_ORDER = {
+    'insiders': 0,
+    'outsiders': 0,
+    'minors': 10000000
+}
