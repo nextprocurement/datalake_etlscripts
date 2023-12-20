@@ -9,7 +9,7 @@ import logging
 import os
 import time
 from yaml import load, CLoader
-from nextplib import ntp_entry as ntp
+from nextplib import ntp_entry as ntp, ntp_constants as cts, ntp_utils as nu
 from mmb_data.mongo_db_connect import Mongo_db
 
 
@@ -38,20 +38,20 @@ def main():
 
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
-        'nextprocurement',
+        config['MONGODB_DB'],
         False,
         config['MONGODB_AUTH'],
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    IDS = {}
+
     if args.group in ['insiders', 'outsiders']:
-        incoming_col = db_lnk.db.get_collection('place')
+        incoming_col = db_lnk.db.get_collection('place_test')
         place_old_col = db_lnk.db.get_collection('place_old')
         cond = {'_id': {'$regex': 'ntp0'}}
         ini_doc = 1
     elif args.group in ['minors']:
-        incoming_col = db_lnk.db.get_collection('place_menores')
+        incoming_col = db_lnk.db.get_collection('place_menores_test')
         place_old_col = db_lnk.db.get_collection('place_menores_old')
         cond = {'_id': {'$regex': 'ntp1'}}
         ini_doc = 10000000
@@ -64,7 +64,7 @@ def main():
     )
     max_id = list(max_id_c)
     if max_id:
-        id_num = ntp.parse_ntp_id(max_id[0]['value'])
+        id_num = nu.parse_ntp_id(max_id[0]['value'])
     else:
         logging.info(f"No records found of the required type on {incoming_col.name}")
 
