@@ -1,4 +1,5 @@
 #!/bin/bash -x
+#SBATCH -o logs/download_PLACE.log
 export BASEDIR=/home/ubuntu/ETL
 export DATADIR=/data/incoming/PLACE_NEW
 export EXEDIR=$BASEDIR/etlscripts
