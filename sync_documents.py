@@ -28,12 +28,9 @@ import sys
 import argparse
 import logging
 import os
-import time
-from types import NoneType
 from yaml import load, CLoader
 import swiftclient as sw
-from nextplib import ntp_entry as ntp
-from nextplib import ntp_storage as ntpst
+from nextplib import ntp_entry as ntp, ntp_storage as ntpst, ntp_utils as nu, ntp_constants as cts
 from mmb_data.mongo_db_connect import Mongo_db
 
 def get_id_range(args):
@@ -93,7 +90,7 @@ def main():
 
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
-        'nextprocurement',
+        config['MONGODB_DB'],
         False,
         config['MONGODB_AUTH'],
         credentials=config['MONGODB_CREDENTIALS'],
@@ -143,12 +140,12 @@ def main():
             sys.error(1)
         if where_from == 'gridfs':
             log_message_i = f"Using Origin GridFS storage at {config['MONGODB_HOST']}"
-            from_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
-            from_folder = 'downloadedDocuments'
+            from_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs(config['documents_col']))
+            from_folder = config['documents_col']
         if where_to == 'gridfs':
             log_message_o = f"Using Destination GridFS storage at {config['MONGODB_HOST']}"
-            to_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
-            to_folder = 'downloadedDocuments'
+            to_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs(config['documents_col']))
+            to_folder = config['documents_col']
 
     if where_from == 'swift' or where_to == 'swift':
         if where_from == where_to and from_folder == to_folder:
@@ -163,12 +160,12 @@ def main():
                 'region_name': config['OS_REGION_NAME'],
                 'application_credential_id': config['OS_APPLICATION_CREDENTIAL_ID'],
                 'application_credential_secret': config['OS_APPLICATION_CREDENTIAL_SECRET'],
-                'service_project_name': 'bsc22NextProcurement'
+                'service_project_name': config['OS_PROJECT_NAME']
             }
         )
         if where_from == 'swift':
             if from_folder is None:
-                from_folder = 'documentos'
+                from_folder = config['OS_SWIFT_DOCUMENTS_FOLDER']
             from_storage = ntpst.NtpStorageSwift(
                 swift_connection=swift_conn,
                 swift_container=container_from,
@@ -178,7 +175,7 @@ def main():
 
         if where_to == 'swift':
             if to_folder is None:
-                to_folder = 'documentos'
+                to_folder = config['OS_SWIFT_DOCUMENTS_FOLDER']
             to_storage = ntpst.NtpStorageSwift(
                 swift_connection=swift_conn,
                 swift_container=container_to,
@@ -212,13 +209,13 @@ def main():
     from_files = set(from_storage.file_list(
         id_range=get_id_range(args),
         set_debug=args.debug
-        ))
+    ))
     logging.info(f"Origin: {len(from_files)} Files available at {args.folder_in} ")
 
     to_files = set(to_storage.file_list(
         id_range=get_id_range(args),
         set_debug=args.debug
-        ))
+    ))
     logging.info(f"Destination: {len(to_files)} Files available at {args.folder_out} ")
 
     new_files = []
