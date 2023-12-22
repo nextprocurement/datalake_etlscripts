@@ -6,10 +6,11 @@ import re
 
 from os.path import join as opj
 from bson.regex import Regex
-
+from gridfs.errors import CorruptGridFile
 import swiftclient as sw
 
 def is_in_range(ntp_id, id_range):
+    ''' Check whether ntp_id is in id_range'''
     if id_range is None:
         return True
     if isinstance(id_range, str):
@@ -22,6 +23,7 @@ def is_in_range(ntp_id, id_range):
     return id_min <= ntp_id <= id_max
 
 def get_ntpid(file):
+    ''' get ntpid from document file name '''
     if '_' not in file:
         return ''
     ntp_id, field = file.split('_', 1)
@@ -43,29 +45,34 @@ class NtpStorageDisk (NtpStorage):
         self.data_dir = data_dir
 
     def file_store(self, file_name, contents):
+        ''' Store contents as file_name '''
         with open(opj(self.data_dir, file_name), 'bw') as output_file:
             output_file.write(contents)
 
     def file_read(self, file_name):
+        ''' Read file_name'''
         try:
             with open(opj(self.data_dir, file_name), 'br') as input_file:
                 return input_file.read()
-        except Exception as e:
-            logging.debug(e.msg)
+        except Exception as err:
+            logging.debug(err)
             logging.error(f"Reading file {opj(self.data_dir, file_name)} failed")
         return ''
 
     def delete_file(self, file_name):
+        ''' Delete file_name from storage '''
         try:
             os.remove({opj(self.data_dir, file_name)})
-        except Exception as e:
-            logging.debug(e)
+        except Exception as err:
+            logging.debug(err)
             logging.error(f"Error deleting {opj(self.data_dir, file_name)}")
 
     def file_exists(self, file_name):
+        ''' Check whether file_name exists'''
         return os.path.exists(opj(self.data_dir, file_name))
 
     def file_list(self, id_range=None, set_Debug=False):
+        ''' Obtains list of file within id_range'''
         file_list = []
         for file in os.listdir(self.data_dir):
             if id_range is None or is_in_range(get_ntpid(file), id_range):
@@ -79,32 +86,41 @@ class NtpStorageGridFs (NtpStorage):
         self.gridfs = gridfs_obj
 
     def file_store(self, file_name, contents):
+        ''' Stores file_name on gridfs'''
         #removing previous version if exists
-        self.delete_file(file_name)
-        self.gridfs.put(contents, filename=file_name)
+        if contents is not None:
+            self.delete_file(file_name)
+            self.gridfs.put(contents, filename=file_name)
 
     def file_read(self, file_name):
+        ''' Retreives file_name from gridFS'''
         if self.file_exists(file_name):
             file_id = self.gridfs.find_one({'filename':file_name})._id
-            return self.gridfs.get(file_id).read()
+            try:
+                return self.gridfs.get(file_id).read()
+            except CorruptGridFile as err:
+                logging.error(f"Error reading {file_name} {err}")
+                return ''
         else:
             logging.error(f"File {file_name} not found")
         return ''
 
     def delete_file(self, file_name):
+        ''' Delete file_name from gridFS'''
         if self.file_exists(file_name):
             file_id = self.gridfs.find_one({'filename':file_name})._id
             self.gridfs.delete(file_id)
 
     def file_exists(self, file_name, no_ext=False):
-        if not no_ext:
-            return self.gridfs.exists(filename=file_name)
-        else:
+        ''' Check whether file_name exists on gridFS'''
+        if no_ext:
             rgx = re.compile("^" + file_name)
             return self.gridfs.exists({'filename':rgx})
-
+        else:
+            return self.gridfs.exists(filename=file_name)
 
     def file_list(self, id_range=None, set_debug=False):
+        ''' Obtains list of files in id_range'''
         list = []
         for file in self.gridfs.find():
             if id_range is None or is_in_range(get_ntpid(file.name), id_range):
