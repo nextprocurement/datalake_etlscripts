@@ -114,20 +114,21 @@ class NtpStorageGridFs (NtpStorage):
     def file_exists(self, file_name, no_ext=False):
         ''' Check whether file_name exists on gridFS'''
         if no_ext:
-            rgx = re.compile("^" + file_name)
+            rgx = re.compile(f"^{file_name}")
             return self.gridfs.exists({'filename':rgx})
         else:
             return self.gridfs.exists(filename=file_name)
 
     def file_list(self, id_range=None, set_debug=False):
         ''' Obtains list of files in id_range'''
-        list = []
+        files = []
         for file in self.gridfs.find():
             if id_range is None or is_in_range(get_ntpid(file.name), id_range):
-                list.append(file.name)
-        return list
+                files.append(file.name)
+        return files
 
     def file_list_per_doc(self, files_col, ntp_id):
+        ''' Obtains stored files corresponding to ntp_id'''
         filename_pattern = re.compile (f"^{ntp_id}")
         filename_rex = Regex.from_native(filename_pattern)
         filename_rex.flags ^= re.UNICODE
@@ -145,6 +146,7 @@ class NtpStorageSwift (NtpStorage):
         self.data_prefix = kwargs['swift_prefix']
 
     def file_store(self, file_name, contents):
+        """ Store contents in file_name at swift"""
         self.connection.put_object(
             self.container,
             opj(self.data_prefix, file_name),
@@ -152,6 +154,7 @@ class NtpStorageSwift (NtpStorage):
         )
 
     def file_exists(self, file_name):
+        ''' Check whether file_name exists'''
         try:
             resp_headers = self.connection.head_object(
                 self.container,
@@ -166,6 +169,7 @@ class NtpStorageSwift (NtpStorage):
             sys.exit()
 
     def get_folder(self, tmp_dir='/tmp', remote_prefix=None):
+        ''' get swift folder contents'''
         head, files = self.connection.get_container(
             self.container,
             prefix=remote_prefix,
@@ -178,7 +182,7 @@ class NtpStorageSwift (NtpStorage):
             logging.debug(f"Creating {tmp_dir}")
             os.mkdir(tmp_dir)
         for file in files:
-            status = self.get_file(file['name'], tmp_dir)
+            status = self.file_read(file['name'], tmp_dir)
             if status:
                 ok += 1
             else:
@@ -187,6 +191,7 @@ class NtpStorageSwift (NtpStorage):
         return tmp_dir
 
     def file_read(self, file_name):
+        ''' Retrieve file_name from swift'''
         try:
             headers, data = self.connection.get_object(
                 self.container,
@@ -199,9 +204,10 @@ class NtpStorageSwift (NtpStorage):
         return 0
 
     def download_file(self, file_name, tmp_dir='/tmp'):
+        ''' Download file_name to a disk file'''
         ok = False
         try:
-            data = self.file_read(self, file_name)
+            data = self.file_read(file_name)
             with open(opj(tmp_dir, os.path.basename(file_name)), "bw") as output_file:
                 output_file.write(data)
             ok = True
@@ -211,17 +217,19 @@ class NtpStorageSwift (NtpStorage):
         return ok
 
     def delete_file(self, file_name):
+        ''' Delete file_name from swift'''
         try:
             headers, data = self.connection.delete_object(
                 self.container,
                 opj(self.data_prefix, file_name)
             )
-        except Exception as e:
-            logging.debug(e)
+        except Exception as err:
+            logging.debug(err)
             logging.error(f"deletion of {file_name} failed")
         return 0
 
     def file_list(self, id_range=None, set_debug=False):
+        ''' Obtains list of files in id_range'''
         logging.getLogger().setLevel(20)
         head, files = self.connection.get_container(
             self.container,
@@ -233,6 +241,7 @@ class NtpStorageSwift (NtpStorage):
         for file in files:
             if not file['name'].startswith(self.data_prefix):
                 continue
-            if '_' in file['name'] and (id_range is None or is_in_range(get_ntpid(os.path.basename(file['name'])), id_range)):
+            if '_' in file['name'] and (id_range is None or\
+                    is_in_range(get_ntpid(os.path.basename(file['name'])), id_range)):
                 list.append(os.path.basename(file['name']))
         return list
