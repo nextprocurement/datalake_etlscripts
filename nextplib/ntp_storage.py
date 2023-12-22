@@ -88,7 +88,7 @@ class NtpStorageGridFs (NtpStorage):
     def file_store(self, file_name, contents):
         ''' Stores file_name on gridfs'''
         #removing previous version if exists
-        if contents is not None:
+        if contents:
             self.delete_file(file_name)
             self.gridfs.put(contents, filename=file_name)
 
