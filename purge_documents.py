@@ -63,7 +63,7 @@ def main():
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    incoming_col = db_lnk.db.get_collection(config[f'{args.group}_col_prefix'] + '_test')
+    incoming_col = db_lnk.db.get_collection(config[f'{args.group}_col_prefix'])
     logging.info(f"Selecting collection {incoming_col.name}")
 
     logging.info(f"Using GridFS storage at {config['MONGODB_HOST']}")
