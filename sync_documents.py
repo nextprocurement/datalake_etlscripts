@@ -30,17 +30,8 @@ import logging
 import os
 from yaml import load, CLoader
 import swiftclient as sw
-from nextplib import ntp_entry as ntp, ntp_storage as ntpst, ntp_utils as nu, ntp_constants as cts
+from nextplib import ntp_storage as ntpst, ntp_utils as nu
 from mmb_data.mongo_db_connect import Mongo_db
-
-def get_id_range(args):
-    if args.id is not None:
-        id_range = args.id
-    elif args.ini is not None or args.fin is not None:
-        id_range = args.ini, args.fin
-    else:
-        id_range = None
-    return id_range
 
 def parse_folder_str(folder):
     container = None
@@ -55,6 +46,7 @@ def parse_folder_str(folder):
         where_from, where_folder = path.split(':', 1)
     else:
         logging.error(f"Not recognized folder {folder}")
+        sys.exit(1)
     return where_from, where_folder, container
 
 def main():
@@ -130,8 +122,8 @@ def main():
                 try:
                     os.mkdir(to_folder)
                     logging.info(f"{to_folder} non existent, created")
-                except:
-                    sys.exit(f"Error creating {to_folder}")
+                except Exception as err:
+                    sys.exit(f"Error creating {to_folder} {err}")
             to_storage = ntpst.NtpStorageDisk(data_dir=to_folder)
 
     if where_from == 'gridfs' or where_to == 'gridfs':
@@ -189,7 +181,7 @@ def main():
         logging.info("Getting ids...")
 
     for ntp_id in (args.id, args.ini, args.fin):
-        if ntp_id is not None and not ntp.check_ntp_id(ntp_id):
+        if ntp_id is not None and not nu.check_ntp_id(ntp_id):
             logging.error(f'{ntp_id} is not a valid ntp id')
             sys.exit()
 
@@ -204,7 +196,7 @@ def main():
         query = {'$and': query}
 
     if args.verbose:
-        logging.info(f"id_range: {get_id_range(args)}")
+        logging.info(f"id_range: {nu.get_id_range(args)}")
 
     from_files = set(from_storage.file_list(
         id_range=get_id_range(args),
