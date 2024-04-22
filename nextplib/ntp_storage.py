@@ -219,7 +219,7 @@ class NtpStorageSwift (NtpStorage):
     def delete_file(self, file_name):
         ''' Delete file_name from swift'''
         try:
-            headers, data = self.connection.delete_object(
+            self.connection.delete_object(
                 self.container,
                 opj(self.data_prefix, file_name)
             )

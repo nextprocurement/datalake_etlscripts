@@ -212,3 +212,4 @@
 "summary"	"summary"	"string"
 "title"	"title"	"string"
 "updated"	"updated"	"string"
+"link"	"link"	"string"

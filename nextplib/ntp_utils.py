@@ -25,6 +25,15 @@ def check_ntp_id(ntp_id):
     '''
     return re.match(r'^ntp[0-9]{8}', ntp_id)
 
+def get_id_range(args):
+    if args.id is not None:
+        id_range = args.id
+    elif args.ini is not None or args.fin is not None:
+        id_range = args.ini, args.fin
+    else:
+        id_range = None
+    return id_range
+
 def get_new_dbfield(col):
     ''' Suggest a new label for missing fields'''
     mod_col = col.replace('ContractFolderStatus - ', '').replace(' - ', '_').replace(' ', '_')
