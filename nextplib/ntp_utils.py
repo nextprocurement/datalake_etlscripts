@@ -102,7 +102,7 @@ def parse_parquet(pd_data_row, new_cols):
         except KeyError:
             mod_col = get_new_dbfield(col)
             logging.error(f'"{col}"\t"{mod_col}"\t"string"\n')
-        new_data['data_model'] = 'v2023'
+        new_data['data_model'] = 'v04/2024'
     return new_data
 
 def get_versions(new_id, col):

@@ -12,6 +12,7 @@ class NtpEntry:
     def __init__(self, ntp_id=None, place_id=None):
         self.ntp_order = 0
         self.ntp_id = ntp_id
+        self.patch_data = {}
         self.data = {
             '_id': ntp_id,
             'id': place_id
@@ -25,6 +26,24 @@ class NtpEntry:
         self.set_ntp_id()
         self.data = copy.deepcopy(data)
         self.data['_id'] = self.ntp_id
+
+    def merge_data(self, new_data):
+        '''Merge new data into instance'''
+        patch_data={'add': {}, 'mod': {}}
+        if 'patch_data' not in self.data:
+            self.data['patch_data'] = {}
+        for k in new_data:
+            if k in self.data:
+                if new_data[k] and self.data[k] != new_data[k]:
+                    logging.debug(f"Modifying {k} {self.data[k]} -> {new_data[k]}")
+                    self.data[k] = new_data[k]
+                    patch_data['mod'][k] = new_data[k]
+
+            else:
+                self.data[k] = new_data[k]
+                patch_data['add'][k] = new_data[k]
+                logging.debug(f"Adding {k} {new_data[k]}")
+        self.patch_data[self.ntp_id] = patch_data
 
     def set_ntp_id(self):
         '''Set ntp_id from ntp_order'''
@@ -60,7 +79,7 @@ class NtpEntry:
                 self.order_from_id()
         try:
             col.replace_one(
-                {'_id': self.data['_id']},
+                {'_id': self.data['_id'], 'id': self.data['id']},
                  self.data,
                  upsert=True
             )
