@@ -26,7 +26,7 @@ import argparse
 import logging
 import pandas as pd
 from yaml import load, CLoader
-from nextplib import ntp_entry as ntp, ntp_storage as cts, ntp_utils as nu
+from nextplib import ntp_entry as ntp, ntp_constants as cts, ntp_utils as nu
 from mmb_data.mongo_db_connect import Mongo_db
 
 def main():
