@@ -1,6 +1,6 @@
 #!/bin/bash -x
 #SBATCH -o logs/download_PLACE.log
-export DATADIR=/data/incoming/PLACE_2024
+export DATADIR=/data/incoming/PLACE_TEST
 export EXEDIR=$BASEDIR/etlscripts
 export BASEURL=https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion
 export DICC=insiders_minors.yaml
