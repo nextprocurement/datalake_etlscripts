@@ -135,6 +135,11 @@ def get_versions(new_id, col):
 
     return versions
 
+def get_active_version(id, col):
+    vers = col.find_one({'id': id, 'obsolete_version':{'$exists':0}})
+    return vers['_id']
+
+
 def get_last_active_version(new_data, versions):
     ''' Get last active document for tender'''
     last_vers = {'_id': 'ntp00000000'}
