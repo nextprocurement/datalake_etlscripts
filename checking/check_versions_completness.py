@@ -46,12 +46,12 @@ def main():
     )
 
     if args.group in ['insiders', 'outsiders']:
-        incoming_col = db_lnk.db.get_collection('place_test')
+        incoming_col = db_lnk.db.get_collection('place')
         place_old_col = db_lnk.db.get_collection('place_old')
         cond = {'_id': {'$regex': 'ntp0'}}
         ini_doc = 1
     elif args.group in ['minors']:
-        incoming_col = db_lnk.db.get_collection('place_menores_test')
+        incoming_col = db_lnk.db.get_collection('place_menores')
         place_old_col = db_lnk.db.get_collection('place_menores_old')
         cond = {'_id': {'$regex': 'ntp1'}}
         ini_doc = 10000000
@@ -76,6 +76,13 @@ def main():
         if doc.load_from_db(incoming_col, doc.ntp_id):
             if doc.is_obsolete():
                 logging.info("Document found marked as obsolete version")
+                if not doc.data['updated_to']:
+                    # No reference to final doc, fetching from id
+                    last_vers = nu.get_active_version(doc.data['id'], incoming_col)
+                    if last_vers:
+                        logging.info(f"Active document for place_id {doc.data['id']} found at {last_vers}, updating")
+                        doc.data['updated_to'] = last_vers
+                        doc.commit_to_db(incoming_col)
                 final_doc = ntp.NtpEntry()
                 if not final_doc.load_from_db(incoming_col, doc.data['updated_to']):
                     logging.error(f"Final document for ntp_id {doc.ntp_id} ({doc.data['updated_to']}) not found")
