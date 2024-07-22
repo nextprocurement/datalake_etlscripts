@@ -25,6 +25,12 @@ def check_ntp_id(ntp_id):
     '''
     return re.match(r'^ntp[0-9]{8}', ntp_id)
 
+def get_group(ntp_id):
+    ''' check which group minors or outsiders/insiders'''
+    if ntp_id.startswith('ntp1'):
+        return 1
+    return 0
+
 def get_id_range(args):
     if args.id is not None:
         id_range = args.id
@@ -136,7 +142,9 @@ def get_versions(new_id, col):
     return versions
 
 def get_active_version(id, col):
+    logging.debug(f"Getting active version for {id}")
     vers = col.find_one({'id': id, 'obsolete_version':{'$exists':0}})
+    logging.debug(vers)
     return vers['_id']
 
 
