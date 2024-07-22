@@ -9,7 +9,7 @@ import logging
 import os
 import time
 from yaml import load, CLoader
-from nextplib import ntp_entry as ntp
+from nextplib import ntp_entry as ntp, ntp_constants as cts, ntp_utils as nu
 from mmb_data.mongo_db_connect import Mongo_db
 
 
@@ -38,13 +38,13 @@ def main():
 
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
-        'nextprocurement',
+        config['MONGODB_DB'],
         False,
         config['MONGODB_AUTH'],
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    IDS = {}
+
     if args.group in ['insiders', 'outsiders']:
         incoming_col = db_lnk.db.get_collection('place')
         place_old_col = db_lnk.db.get_collection('place_old')
@@ -64,7 +64,7 @@ def main():
     )
     max_id = list(max_id_c)
     if max_id:
-        id_num = ntp.parse_ntp_id(max_id[0]['value'])
+        id_num = nu.parse_ntp_id(max_id[0]['value'])
     else:
         logging.info(f"No records found of the required type on {incoming_col.name}")
 
@@ -76,6 +76,13 @@ def main():
         if doc.load_from_db(incoming_col, doc.ntp_id):
             if doc.is_obsolete():
                 logging.info("Document found marked as obsolete version")
+                if not doc.data['updated_to']:
+                    # No reference to final doc, fetching from id
+                    last_vers = nu.get_active_version(doc.data['id'], incoming_col)
+                    if last_vers:
+                        logging.info(f"Active document for place_id {doc.data['id']} found at {last_vers}, updating")
+                        doc.data['updated_to'] = last_vers
+                        doc.commit_to_db(incoming_col)
                 final_doc = ntp.NtpEntry()
                 if not final_doc.load_from_db(incoming_col, doc.data['updated_to']):
                     logging.error(f"Final document for ntp_id {doc.ntp_id} ({doc.data['updated_to']}) not found")

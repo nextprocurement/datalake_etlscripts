@@ -28,22 +28,10 @@ import sys
 import argparse
 import logging
 import os
-import time
-from types import NoneType
 from yaml import load, CLoader
 import swiftclient as sw
-from nextplib import ntp_entry as ntp
-from nextplib import ntp_storage as ntpst
+from nextplib import ntp_entry as ntp, ntp_storage as ntpst, ntp_utils as nu, ntp_constants as cts
 from mmb_data.mongo_db_connect import Mongo_db
-
-def get_id_range(args):
-    if args.id is not None:
-        id_range = args.id
-    elif args.ini is not None or args.fin is not None:
-        id_range = args.ini, args.fin
-    else:
-        id_range = None
-    return id_range
 
 def parse_folder_str(folder):
     container = None
@@ -58,6 +46,7 @@ def parse_folder_str(folder):
         where_from, where_folder = path.split(':', 1)
     else:
         logging.error(f"Not recognized folder {folder}")
+        sys.exit(1)
     return where_from, where_folder, container
 
 def main():
@@ -75,6 +64,7 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
     parser.add_argument('--check_only',action='store_true', help='Check only, no transfer')
+    parser.add_argument('--patch_list', action='store', help='Prepare a listing of modifications')
 
     args = parser.parse_args()
     # Setup logging
@@ -93,7 +83,7 @@ def main():
 
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
-        'nextprocurement',
+        config['MONGODB_DB'],
         False,
         config['MONGODB_AUTH'],
         credentials=config['MONGODB_CREDENTIALS'],
@@ -133,8 +123,8 @@ def main():
                 try:
                     os.mkdir(to_folder)
                     logging.info(f"{to_folder} non existent, created")
-                except:
-                    sys.exit(f"Error creating {to_folder}")
+                except Exception as err:
+                    sys.exit(f"Error creating {to_folder} {err}")
             to_storage = ntpst.NtpStorageDisk(data_dir=to_folder)
 
     if where_from == 'gridfs' or where_to == 'gridfs':
@@ -143,12 +133,12 @@ def main():
             sys.error(1)
         if where_from == 'gridfs':
             log_message_i = f"Using Origin GridFS storage at {config['MONGODB_HOST']}"
-            from_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
-            from_folder = 'downloadedDocuments'
+            from_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs(config['documents_col']))
+            from_folder = config['documents_col']
         if where_to == 'gridfs':
             log_message_o = f"Using Destination GridFS storage at {config['MONGODB_HOST']}"
-            to_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
-            to_folder = 'downloadedDocuments'
+            to_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs(config['documents_col']))
+            to_folder = config['documents_col']
 
     if where_from == 'swift' or where_to == 'swift':
         if where_from == where_to and from_folder == to_folder:
@@ -163,12 +153,12 @@ def main():
                 'region_name': config['OS_REGION_NAME'],
                 'application_credential_id': config['OS_APPLICATION_CREDENTIAL_ID'],
                 'application_credential_secret': config['OS_APPLICATION_CREDENTIAL_SECRET'],
-                'service_project_name': 'bsc22NextProcurement'
+                'service_project_name': config['OS_PROJECT_NAME']
             }
         )
         if where_from == 'swift':
             if from_folder is None:
-                from_folder = 'documentos'
+                from_folder = config['OS_SWIFT_DOCUMENTS_FOLDER']
             from_storage = ntpst.NtpStorageSwift(
                 swift_connection=swift_conn,
                 swift_container=container_from,
@@ -178,7 +168,7 @@ def main():
 
         if where_to == 'swift':
             if to_folder is None:
-                to_folder = 'documentos'
+                to_folder = config['OS_SWIFT_DOCUMENTS_FOLDER']
             to_storage = ntpst.NtpStorageSwift(
                 swift_connection=swift_conn,
                 swift_container=container_to,
@@ -192,7 +182,7 @@ def main():
         logging.info("Getting ids...")
 
     for ntp_id in (args.id, args.ini, args.fin):
-        if ntp_id is not None and not ntp.check_ntp_id(ntp_id):
+        if ntp_id is not None and not nu.check_ntp_id(ntp_id):
             logging.error(f'{ntp_id} is not a valid ntp id')
             sys.exit()
 
@@ -207,18 +197,18 @@ def main():
         query = {'$and': query}
 
     if args.verbose:
-        logging.info(f"id_range: {get_id_range(args)}")
+        logging.info(f"id_range: {nu.get_id_range(args)}")
 
     from_files = set(from_storage.file_list(
-        id_range=get_id_range(args),
-        set_degug=args.debug
-        ))
+        id_range=nu.get_id_range(args),
+        set_debug=args.debug
+    ))
     logging.info(f"Origin: {len(from_files)} Files available at {args.folder_in} ")
 
     to_files = set(to_storage.file_list(
-        id_range=get_id_range(args),
+        id_range=nu.get_id_range(args),
         set_debug=args.debug
-        ))
+    ))
     logging.info(f"Destination: {len(to_files)} Files available at {args.folder_out} ")
 
     new_files = []
@@ -239,6 +229,18 @@ def main():
             if file not in from_files:
                 to_delete.append(file)
         logging.info(f"{len(to_delete)} files to delete at Destination")
+
+    if args.patch_list:
+        with open(args.patch_list, "w") as patch_file:
+            if args.delete:
+                for file in to_delete:
+                    print(f"DEL {file}", file=patch_file)
+            if args.replace:
+                for file in exist_files:
+                    print(f"UPD {file}", file=patch_file)
+            for file in new_files:
+               print(f"ADD {file}", file=patch_file)
+
 
     if not args.check_only:
         if args.verbose:

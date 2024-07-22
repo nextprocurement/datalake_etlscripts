@@ -17,6 +17,7 @@ options:
   --debug          Extra debug information
   --no_backup      Do not copy the deleted file on backup bucket
   --group GROUP    insiders|outsiders|minors
+  --recover_backup Recover from backup
 '''
 import sys
 import argparse
@@ -24,8 +25,7 @@ import logging
 import os
 import time
 from yaml import load, CLoader
-from nextplib import ntp_entry as ntp
-from nextplib import ntp_storage as ntpst
+from nextplib import ntp_entry as ntp, ntp_storage as ntpst, ntp_constants as cts, ntp_utils as nu
 from mmb_data.mongo_db_connect import Mongo_db
 
 def main():
@@ -38,7 +38,9 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
     parser.add_argument('--no_backup', action='store_true', help='Do not copy the deleted file on backup bucket')
+    parser.add_argument('--recover_backup', action='store_true', help='Recover files from backup')
     parser.add_argument('--group', action='store', help='insiders|outsiders|minors')
+    parser.add_argument('--dry_run', action='store_true', help='DO not change files, just check')
 
     args = parser.parse_args()
     # Setup logging
@@ -56,25 +58,20 @@ def main():
 
     db_lnk = Mongo_db(
         config['MONGODB_HOST'],
-        'nextprocurement',
+        config['MONGODB_DB'],
         False,
         config['MONGODB_AUTH'],
         credentials=config['MONGODB_CREDENTIALS'],
         connect_db=True
     )
-    if args.group in ['insiders', 'outsiders']:
-        incoming_col = db_lnk.db.get_collection('place')
-    elif args.group == 'minors':
-        incoming_col = db_lnk.db.get_collection('place_menores')
-    else:
-        logging.error(f"Group {args.group} invalid or missing")
-        sys.exit()
+    incoming_col = db_lnk.db.get_collection(config[f'{args.group}_col_prefix'])
     logging.info(f"Selecting collection {incoming_col.name}")
 
     logging.info(f"Using GridFS storage at {config['MONGODB_HOST']}")
-    storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments'))
-    backup_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs('downloadedDocuments_backup'))
-    files_col = db_lnk.db.get_collection('downloadedDocuments.files')
+    storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs(config['documents_col']))
+    backup_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs(config['documents_backup_col']))
+    files_col = db_lnk.db.get_collection(config['documents_col'] + '.files')
+    backup_files_col = db_lnk.db.get_collection(config['documents_backup_col'] + '.files')
 
     if args.verbose:
         logging.info("Getting obsolete ids...")
@@ -100,13 +97,21 @@ def main():
     for doc in list(incoming_col.find(query, {'_id':1, 'obsolete_version':1})):
         ntp_id = doc['_id']
         if not doc['obsolete_version']:
-            logging.warning(f"{ntp_id} is not marked as obsolete, skipping")
+            logging.warning(f"{ntp_id} is not marked as obsolete")
+            if args.recover_backup:
+                for file in backup_storage.file_list_per_doc(backup_files_col, ntp_id):
+                    if not args.dry_run:
+                        storage.file_store(file['filename'], backup_storage.file_read(file['filename']))
+                    logging.info(f"Recovered {file['filename']}")
+                continue
         if args.verbose:
             logging.info(f'Processing {ntp_id}')
         for file in storage.file_list_per_doc(files_col, ntp_id):
             if not args.no_backup:
-                backup_storage.file_store(file['filename'], storage.file_read(file['filename']))
-            storage.delete_file(file['filename'])
+                if not args.dry_run:
+                    backup_storage.file_store(file['filename'], storage.file_read(file['filename']))
+            if not args.dry_run:
+                storage.delete_file(file['filename'])
             logging.info(f"Deleted {file['filename']}")
             num_del += 1
 

@@ -1,4 +1,5 @@
 #!/bin/bash -x
+#SBATCH -o logs/process_parquets_minors.log
 export BASEDIR=/home/ubuntu/ETL
 export DATADIR=/data/incoming/PLACE_NEW
 export EXEDIR=$BASEDIR/etlscripts

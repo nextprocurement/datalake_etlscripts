@@ -1,3 +1,3 @@
 #!/bin/bash
-. ~/miniconda3/bin/activate nextp
+#SBATCH -o logs/sync_docs.log
 python sync_documents.py -v -i gridfs: -o PLACE@swift:documentos

@@ -26,7 +26,7 @@ import argparse
 import logging
 import pandas as pd
 from yaml import load, CLoader
-from nextplib import ntp_entry as ntp, ntp_constants as cts, ntp_utils as nu
+from nextplib import ntp_entry as ntp, ntp_storage as cts, ntp_utils as nu
 from mmb_data.mongo_db_connect import Mongo_db
 
 def main():
@@ -98,19 +98,16 @@ def main():
             )
             logging.debug(new_data['updated'])
             #new_doc.load_data(nu.parse_ntp_id(found_version['_id']), new_data)
-            selected_id = found_version['_id']
-            previous_doc = ntp.NtpEntry()
-            previous_doc.load_from_db(incoming_col, selected_id)
-            previous_doc.merge_data(new_data)
-            tmp_num = previous_doc.commit_to_db(incoming_col, update=False)
+            new_doc.merge_data(nu.parse_ntp_id(found_version['_id']), new_data)
+            tmp_num = new_doc.commit_to_db(incoming_col, update=False)
+
         else:
             logging.info("No active document found. Adding new document")
             new_doc.load_data(id_num + 1, new_data)
             tmp_num = new_doc.commit_to_db(incoming_col, update=False)
             id_num = max(tmp_num, id_num)
-            selected_id = new_doc.ntp_id
         for vers in versions:
-            if vers['_id'] == selected_id:
+            if vers['_id'] == new_doc.ntp_id:
                 continue
             vers_obs = ntp.NtpEntry(ntp_id=vers['_id'], place_id=vers['id'])
             vers_obs.make_obsolete(new_doc.ntp_id)
@@ -118,7 +115,7 @@ def main():
             vers_obs.commit_to_db(incoming_col, update=False)
 
         if args.verbose:
-            logging.info(f"Processed {selected_id}")
+            logging.info(f"Processed {new_doc.ntp_id}")
         n_procs += 1
     logging.info(f"Completed {n_procs} documents")
 
