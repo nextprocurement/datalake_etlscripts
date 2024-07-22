@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--no_backup', action='store_true', help='Do not copy the deleted file on backup bucket')
     parser.add_argument('--recover_backup', action='store_true', help='Recover files from backup')
     parser.add_argument('--group', action='store', help='insiders|outsiders|minors')
+    parser.add_argument('--dry_run', action='store_true', help='DO not change files, just check')
 
     args = parser.parse_args()
     # Setup logging
@@ -99,15 +100,18 @@ def main():
             logging.warning(f"{ntp_id} is not marked as obsolete")
             if args.recover_backup:
                 for file in backup_storage.file_list_per_doc(backup_files_col, ntp_id):
-                    storage.file_store(file['filename'], backup_storage.file_read(file['filename']))
+                    if not args.dry_run:
+                        storage.file_store(file['filename'], backup_storage.file_read(file['filename']))
                     logging.info(f"Recovered {file['filename']}")
                 continue
         if args.verbose:
             logging.info(f'Processing {ntp_id}')
         for file in storage.file_list_per_doc(files_col, ntp_id):
             if not args.no_backup:
-                backup_storage.file_store(file['filename'], storage.file_read(file['filename']))
-            storage.delete_file(file['filename'])
+                if not args.dry_run:
+                    backup_storage.file_store(file['filename'], storage.file_read(file['filename']))
+            if not args.dry_run:
+                storage.delete_file(file['filename'])
             logging.info(f"Deleted {file['filename']}")
             num_del += 1
 
