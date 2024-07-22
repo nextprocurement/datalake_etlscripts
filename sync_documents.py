@@ -30,7 +30,7 @@ import logging
 import os
 from yaml import load, CLoader
 import swiftclient as sw
-from nextplib import ntp_storage as ntpst, ntp_utils as nu
+from nextplib import ntp_entry as ntp, ntp_storage as ntpst, ntp_utils as nu, ntp_constants as cts
 from mmb_data.mongo_db_connect import Mongo_db
 
 def parse_folder_str(folder):
@@ -64,6 +64,7 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
     parser.add_argument('--check_only',action='store_true', help='Check only, no transfer')
+    parser.add_argument('--patch_list', action='store', help='Prepare a listing of modifications')
 
     args = parser.parse_args()
     # Setup logging
@@ -199,13 +200,13 @@ def main():
         logging.info(f"id_range: {nu.get_id_range(args)}")
 
     from_files = set(from_storage.file_list(
-        id_range=get_id_range(args),
+        id_range=nu.get_id_range(args),
         set_debug=args.debug
     ))
     logging.info(f"Origin: {len(from_files)} Files available at {args.folder_in} ")
 
     to_files = set(to_storage.file_list(
-        id_range=get_id_range(args),
+        id_range=nu.get_id_range(args),
         set_debug=args.debug
     ))
     logging.info(f"Destination: {len(to_files)} Files available at {args.folder_out} ")
@@ -228,6 +229,18 @@ def main():
             if file not in from_files:
                 to_delete.append(file)
         logging.info(f"{len(to_delete)} files to delete at Destination")
+
+    if args.patch_list:
+        with open(args.patch_list, "w") as patch_file:
+            if args.delete:
+                for file in to_delete:
+                    print(f"DEL {file}", file=patch_file)
+            if args.replace:
+                for file in exist_files:
+                    print(f"UPD {file}", file=patch_file)
+            for file in new_files:
+               print(f"ADD {file}", file=patch_file)
+
 
     if not args.check_only:
         if args.verbose:
