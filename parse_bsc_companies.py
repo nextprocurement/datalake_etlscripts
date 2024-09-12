@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 ''' Read BSC producer JSON for extracted companies
-    usage: parse_bsc_companies.py [-h] [--config CONFIG] [--debug] [-v] --dry_run json_file
+    usage: parse_bsc_companies.py [-h] [--config CONFIG] [--debug] [-v] --dry_run json_files
 
 Parse NextProcurement parquets
 
 positional arguments:
-  json_file       Column sanitized names
+  json_files       Column sanitized names
 
 options:
   -h, --help       show this help message and exit
@@ -47,7 +47,7 @@ def main():
         config = load(config_file, Loader=CLoader)
 
     logging.info(f"Configuration: {args.config}")
-    logging.info(f"Companies:     {args.json_file}")
+    logging.info(f"Companies:     {args.json_files}")
 
     logging.info(f"Connecting MongoDB at {config['MONGODB_HOST']}")
     db_lnk = Mongo_db(
