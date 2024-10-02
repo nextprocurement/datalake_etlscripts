@@ -65,7 +65,7 @@ Script to load inlined documents onto data_lake, takes input data from MongoDB
         --container Swift container to use
         --allow_redirects Allow for automatic redirects on HTTP 301 302
         --skip_early Skip immediately if any file for the corresponding field is already stored
-        --skip_bad_servers Skip servers with usual timeouts or missing documents
+        --skip_bad_servers Skip servers with usual timeouts or missing documents to speed up
         --group GROUP insiders|outsiders|minors
 
 ### sync_documents.py
@@ -94,12 +94,15 @@ Script to synchronize documents among storages
 ### Other scripts
 - *calc_summary.py* Collect summary data for API /info endpoint
 - *clean_place.py* Mark obsolete and final document versions
-- *get_entities.py* Obtains entities participating
 - *refresh_versions.py* Mark obsolete versions
 - *purge_documents.py* Remove duplicated documents from data lake
+- *parse_bsc_companies.py* Parse company names and Ids extracted from documents
+- *checking folder* Scripts for internal checks
+- *scripts* Scripts to manage automation
 
 ## Authors and acknowledgment
 
+Josep LL. Gelpí
 
 ## License
 Relesead under the Apache 2.0 license
