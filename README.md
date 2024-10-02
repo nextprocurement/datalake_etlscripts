@@ -8,7 +8,7 @@ NextProcurement ETL scripts suite
 ## Description
 Suite of scripts to complete the population of NextProcurement Data Lake and DataBase. Information is processed from downloads from Contratactiones del Estado. Parquet files are produced using sproc by UC3M (https://github.com/nextprocurement/sproc)
 
-![Alt text](nextpdatalake_update.png "BSC Data Lake schema")
+![BSC Data lake scheme](nextpdatalake_update.png "BSC Data Lake schema")
 
 ## Requirements
     jupyter==1.0.0
@@ -42,7 +42,7 @@ Read parquet files into mongodb DB
         --debug          Add Debug information
         -v, --verbose    Add Extra information
         --group GROUP    outsiders|minors|insiders
-        --update         update existing atom or insert a new one
+
 
 ### get_documents.py
 Script to load inlined documents onto data_lake, takes input data from MongoDB
@@ -92,6 +92,7 @@ Script to synchronize documents among storages
         -v, --verbose         Extra progress information
         --debug               Extra debug information
         --check_only          Check only, no transfer
+        --patch_list PATCH_LIST Prepare a listing of modifications
 
 ### Other scripts
 - *calc_summary.py* Collect summary data for API /info endpoint
