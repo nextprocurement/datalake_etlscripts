@@ -8,6 +8,8 @@ NextProcurement ETL scripts suite
 ## Description
 Suite of scripts to complete the population of NextProcurement Data Lake and DataBase. Information is processed from downloads from Contratactiones del Estado. Parquet files are produced using sproc by UC3M (https://github.com/nextprocurement/sproc)
 
+![Alt text](https://gitlab.bsc.es/inb/nextprocurement/etlscripts/-/raw/main/nextpdatalake_update.png "BSC Data Lake schema")
+
 ## Requirements
     jupyter==1.0.0
     pandas==1.4.3
