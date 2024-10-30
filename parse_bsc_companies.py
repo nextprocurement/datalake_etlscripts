@@ -95,16 +95,16 @@ def main():
                     ref_doc = ntp.NtpEntry()
                     ref_doc.load_from_db(col, processed_docs[data['procurement_id']])
 
-                if 'empresas_en_docs' not in ref_doc.data:
-                    ref_doc.data['empresas_en_docs'] = {}
+                if 'nextp_enriched/companies' not in ref_doc.data:
+                    ref_doc.data['nextp_enriched/companies'] = {}
 
-                ref_doc.data['empresas_en_docs'][data['doc_name']] = {}
-                for group in ('SINGLE_COMPANY', 'UTE'):
+                ref_doc.data['nextp_enriched/companies'][data['doc_name']] = {}
+                for group in ('SINGLE_COMPANY', 'UTE','NIFs'):
                     if group in data and data[group]:
-                        ref_doc.data['empresas_en_docs'][data['doc_name']][group] = data[group]
+                        ref_doc.data['nextp_enriched/companies'][data['doc_name']][group] = data[group]
 
                 logging.debug(f"Document {ref_doc.ntp_id} to update ")
-                logging.debug(ref_doc.data['empresas_en_docs'])
+                logging.debug(ref_doc.data['nextp_enriched/companies'])
                 if not args.dry_run:
                     ref_doc.commit_to_db(col)
                 else:
