@@ -21,10 +21,44 @@ import sys
 import argparse
 import logging
 import json
+import re
+import requests
 from yaml import load, CLoader
 from nextplib import ntp_entry as ntp, ntp_constants as cts, ntp_utils as nu
 from mmb_data.mongo_db_connect import Mongo_db
+from spanish_dni.dni import DNI
+from spanish_dni.validator.exceptions import NotValidDNIException
+from spanish_dni.validator import validate_dni
 
+API_PREFIX = "https://nextprocurement.bsc.es/api"
+
+DNI_REGEX = r'^(\d{8})([A-Z])$'
+CIF_REGEX = r'^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$'
+NIE_REGEX = r'^[XYZ]\d{7,8}[A-Z]$'
+
+def process_nif(nif):   
+    nif = str(nif).upper().replace('-','').replace(' ','').replace('.', '')
+    logging.info(f"Checking NIF {nif}")
+    if re.match(CIF_REGEX, nif):
+        valid = True
+        logging.debug(f"CIF {nif} is valid")
+    else:
+        valid = True
+        try:
+            dni_parsed: DNI = validate_dni(nif)
+            logging.debug(f"DNI {nif} is type {dni_parsed.dni_type}")
+        except NotValidDNIException:
+            valid = False
+            logging.error(f"DNI/NIE {nif} is not valid")
+    if valid:
+        req = requests.get(f"{API_PREFIX}/companies/{nif}")
+        if req.status_code == 200:
+            company_data = req.json()
+            logging.info(f"NIF/CIF {nif} found as {company_data['Name']}")
+            return company_data
+        logging.error(f"NIF/CIF {nif} not found as company")
+    return False
+            
 def main():
     parser = argparse.ArgumentParser(description='Parse BSC Companies')
     parser.add_argument('--config', action='store', help="Configuration file", default="secrets.yml")
@@ -47,7 +81,7 @@ def main():
         config = load(config_file, Loader=CLoader)
 
     logging.info(f"Configuration: {args.config}")
-    logging.info(f"Companies:     {args.json_files}")
+    logging.info(f"Files:     {args.json_files}")
 
     logging.info(f"Connecting MongoDB at {config['MONGODB_HOST']}")
     db_lnk = Mongo_db(
@@ -71,9 +105,15 @@ def main():
         with open(file) as json_file:
             for line in json_file:
                 data = json.loads(line)
-                if all(x not in data for x in ['SINGLE_COMPANY', 'UTE']):
+                print(data)
+
+                 
+                if all(x not in data for x in ['SINGLE_COMPANY', 'UTE', 'NIFs']):
                     logging.warning(f"Document {data['doc_name']} does not have companies")
                     continue
+                if all(not data[x] for x in ['SINGLE_COMPANY', 'UTE', 'NIFs']):
+                    logging.warning(f"Document {data['doc_name']} has empty companies data")
+                    continue    
 
                 if data['procurement_id'] not in processed_docs:
                     logging.debug(f"Processing {data['procurement_id']}")
@@ -99,16 +139,31 @@ def main():
                     ref_doc.data['nextp_enriched/companies'] = {}
 
                 ref_doc.data['nextp_enriched/companies'][data['doc_name']] = {}
-                for group in ('SINGLE_COMPANY', 'UTE','NIFs'):
+
+                for group in ('SINGLE_COMPANY', 'UTE', 'NIFs'):
                     if group in data and data[group]:
                         ref_doc.data['nextp_enriched/companies'][data['doc_name']][group] = data[group]
+
+                for nif in data['NIFs']:
+                    company_data = process_nif(nif)
+                    if company_data:                        
+                        for key in ['FullName', 'Name', 'Province', 'CompanyType', 'CompanyDescription']:
+                            ref_doc.data['nextp_enriched/companies'][data['doc_name']]['NIFs'][nif][key] = company_data[key]
+
+                for company in data['SINGLE_COMPANY']:
+                    if 'NIF' in company:
+                        nif = company['NIF']
+                        company_data = process_nif(nif)
+                        if company_data:
+                            for key in ['FullName','Name','Province', 'CompanyType', 'CompanyDescription']:
+                                ref_doc.data['nextp_enriched/companies'][data['doc_name']]['SINGLE_COMPANY'][key] = company_data[key]
 
                 logging.debug(f"Document {ref_doc.ntp_id} to update ")
                 logging.debug(ref_doc.data['nextp_enriched/companies'])
                 if not args.dry_run:
                     ref_doc.commit_to_db(col)
                 else:
-                    logging.info(f"Document {ref_doc.ntp_id} not saved (--dry_run)")
+                    logging.warning(f"Document {ref_doc.ntp_id} not saved (--dry_run)")
         logging.info(f"Processed {len(processed_docs)} documents")
     logging.info("Done")
 
