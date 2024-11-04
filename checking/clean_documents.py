@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default;secrets.yml)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
+    parser.add_argument('--output',action='store', help='Output filename index')
 
     args = parser.parse_args()
     # Setup logging
@@ -56,9 +57,10 @@ def main():
     files_col = db_lnk.db.get_collection(config['documents_col'] + '.files')
     
     processed_docs = {}
+    docs_id_index = {}
+    new_files = set()
 
     for file in files_col.find():
-       
         id, field = file['filename'].split('_', 1)
         if id not in processed_docs:
             logging.debug(f"Processing {id}")
@@ -79,20 +81,24 @@ def main():
             logging.debug(f"Document {id} already found as {processed_docs[id]}")
             ref_doc = ntp.NtpEntry()
             ref_doc.load_from_db(col, processed_docs[id])
-        if 'id' not in ref_doc.data:
-            logging.error(f"Document {id} does not have place_id")
-            continue
+    
+        if ref_doc.data['id'] in new_ids:
+            logging.warning(f"Found Duplicated file at {ref_doc.data['id']}")
         versions = set([x['_id'] for x in nu.get_versions(ref_doc.data['id'], col)])
 
         new_id = f"PL{format(int(ref_doc.data['id'].split('/')[-1]), '08d')}"
         new_filename = f"{new_id}_{field}"
-        
+        if new_filename in new_files:
+            logging.warning(f"Found duplicated {new_filename}")
+        new_files.add(new_filename)
+
         print(json.dumps({'id':new_id, 'versions':sorted(list(versions))}))
+        docs_id_index[file['filename']] = new_filename
 
 
-
-    
-
+    with open('args.output', "w") as output_file:
+        for old_filename, new_filename in docs_id_index.items():
+            print(f"{old_filename} {docs_id_index[new_filename]}", file=output_file)
 
 
 if __name__ == "__main__":
