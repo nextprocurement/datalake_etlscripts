@@ -28,6 +28,9 @@ import re
 from yaml import load, CLoader
 from nextplib import ntp_entry as ntp
 from mmb_data.mongo_db_connect import Mongo_db
+from spanish_dni.dni import DNI
+from spanish_dni.validator.exceptions import NotValidDNIException
+from spanish_dni.validator import validate_dni
 
 DNI_REGEX = r'^(\d{8})([A-Z])$'
 CIF_REGEX = r'^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$'
@@ -35,12 +38,23 @@ NIE_REGEX = r'^[XYZ]\d{7,8}[A-Z]$'
 FIELDS = ['Nombre', 'Ubicacion_organica', '']
 
 
-def valid_nif(a):
-    a = str(a).upper().replace('-','').replace(' ','').replace('.', '')
-    if re.match(CIF_REGEX, a) or re.match(DNI_REGEX, a) or re.match(NIE_REGEX, a):
-        return a
+def process_nif(nif):   
+    nif = str(nif).upper().replace('-','').replace(' ','').replace('.', '')
+    logging.info(f"Checking NIF {nif}")
+    if re.match(CIF_REGEX, nif):
+        valid = True
+        logging.debug(f"CIF {nif} is valid")
+    else:
+        valid = True
+        try:
+            dni_parsed: DNI = validate_dni(nif)
+            logging.debug(f"DNI {nif} is type {dni_parsed.dni_type}")
+        except (NotValidDNIException, ValueError) as error:
+            valid = False
+            logging.error(f"DNI/NIE {nif} is not valid")
+    if valid:
+        return nif
     return False
-
 
 def main():
     ''' Main '''
@@ -86,12 +100,10 @@ def main():
         logging.error("--group missing or not recognized. acceptable minors|insiders|outsiders")
         sys.exit()
 
-    contract_col = db_lnk.db.get_collection('contractingParties')
-    adjud_col = db_lnk.db.get_collection('adjudicatarios')
-
+    entities_col = db_lnk.db.get_collection('entities')
+    
     if args.drop:
-        contract_col.delete_many({})
-        adjud_col.delete_many({})
+        entities_col.delete_many({})
 
     if args.verbose:
         logging.info("Getting ids...")
@@ -104,7 +116,7 @@ def main():
     if args.id is not None:
         query = {'_id': args.id}
     else:
-        query = [{}]
+        query = [{'obsolete_version': {'$exists':False}}]
         if args.ini is not None:
             query.append({'_id':{'$gte': args.ini}})
         if args.fin is not None:
@@ -112,7 +124,7 @@ def main():
         query = {'$and': query}
     num_ids = 0
 
-    for doc in list(incoming_col.find(query, {'_id' : 1})):
+    for doc in list(incoming_col.find(query, {'_id' : 1, 'obsolete_version': 1})):
         ntp_id = doc['_id']
         if args.verbose:
             logging.info(f'Processing {ntp_id}')
@@ -120,7 +132,10 @@ def main():
         ntp_doc = ntp.NtpEntry()
         ntp_doc.load_from_db(incoming_col, ntp_id)
         if 'data_model' not in ntp_doc.data:
-            logging.warning(f"{ntp_doc.data['_id']} is not in v2023 data model, skipping")
+            logging.warning(f"{ntp_doc.data['_id']} is not in the appropriate data model, skipping")
+            continue
+        if 'obsolete_version' in ntp_doc.data and ntp_doc.data['obsolete_version']:
+            logging.warning(f"{ntp_doc.data['_id']} is marked as obsolete, skipping")
             continue
         contracting_party = {}
         contracting_party['other_ids'] = []
@@ -144,11 +159,18 @@ def main():
 
             if 'nif' in contracting_party:
                 contracting_party['_id'] = contracting_party['nif'].replace('-', '')
+                contracting_party['nif_valid'] = process_nif(contracting_party['nif'])
+                contracting_party['type'] = 'Entidad_Adjudicadora'
+                logging.debug(contracting_party)
                 try:
-                    contract_col.update_one(
+                    entities_col.update_one(
                         {'_id': contracting_party['_id']},
-                        {'$set': contracting_party},
+                        {'$set': contracting_party,'$addToSet': {'contratos': ntp_id}},
                         upsert=True
+                    )
+                    entities_col.update_one(
+                        {'_id': contracting_party['_id']},
+                        {'$addToSet': {'contratos': ntp_id}}
                     )
                 except Exception as e:
                     logging.error(e)
@@ -166,9 +188,10 @@ def main():
         if 'Adjudicatario/Identificador' in ntp_doc.data and ntp_doc.data['Adjudicatario/Identificador']:
             if not isinstance(ntp_doc.data['Adjudicatario/Identificador'], list):
                 ntp_doc.data['Adjudicatario/Identificador'] = [ntp_doc.data['Adjudicatario/Identificador']]
+                
             for ind, nif in enumerate(ntp_doc.data['Adjudicatario/Identificador']):
-                logging.debug(nif)
-                nif_ok = valid_nif(nif)
+                logging.debug(f"{ind}, {nif}")
+                nif_ok = process_nif(nif)
                 if nif_ok:
                     nif = nif.replace('-', '')
                     adjudicatario['_id'] = nif_ok
@@ -177,12 +200,21 @@ def main():
                         if not 'Adjudicatario' in k:
                             continue
                         lb = k.replace('Adjudicatario/', '')
-                        adjudicatario[lb] = ntp_doc.data[k][ind]
+                        if not isinstance(ntp_doc.data[k], list):
+                            adjudicatario[lb] = ntp_doc.data[k]
+                        else:
+                            adjudicatario[lb] = ntp_doc.data[k][ind]
+                        adjudicatario['type'] = 'Adjudicatario'
+                        logging.debug(adjudicatario)
                     try:
-                        adjud_col.update_one(
+                        entities_col.update_one(
                             {'_id': nif_ok},
                             {'$set': adjudicatario},
                             upsert=True
+                        )
+                        entities_col.update_one(
+                            {'_id': nif_ok},
+                            {'$addToSet': {'contratos': ntp_id}}
                         )
                     except Exception as e:
                         logging.error(e)
