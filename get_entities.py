@@ -26,7 +26,7 @@ import os
 import time
 import re
 from yaml import load, CLoader
-from nextplib import ntp_entry as ntp
+from nextplib import ntp_entry as ntp, ntp_constants as cts, ntp_utils as nu
 from mmb_data.mongo_db_connect import Mongo_db
 from spanish_dni.dni import DNI
 from spanish_dni.validator.exceptions import NotValidDNIException
@@ -109,7 +109,7 @@ def main():
         logging.info("Getting ids...")
 
     for ntp_id in (args.id, args.ini, args.fin):
-        if ntp_id is not None and not ntp.check_ntp_id(ntp_id):
+        if ntp_id is not None and not nu.check_ntp_id(ntp_id):
             logging.error(f'{ntp_id} is not a valid ntp id')
             sys.exit()
 
@@ -145,12 +145,14 @@ def main():
                 ntp_doc.data['Entidad_Adjudicadora/IDschemeName'] = [ntp_doc.data['Entidad_Adjudicadora/IDschemeName']]
             for ind, value in enumerate(ntp_doc.data['Entidad_Adjudicadora/ID']):
                 logging.debug(f"{ind}, {value}")
-                if ntp_doc.data['Entidad_Adjudicadora/IDschemeName'][ind] == 'NIF':
-                    contracting_party['nif'] = value
-                else:
-                    contracting_party['other_ids'].append({
+                if len(ntp_doc.data['Entidad_Adjudicadora/IDschemeName']) > ind:
+                    logging.debug(ntp_doc.data['Entidad_Adjudicadora/IDschemeName'][ind])
+                    if ntp_doc.data['Entidad_Adjudicadora/IDschemeName'][ind] == 'NIF':
+                        contracting_party['nif'] = value
+                    else:
+                        contracting_party['other_ids'].append({
                             ntp_doc.data['Entidad_Adjudicadora/IDschemeName'][ind]: value
-                    })
+                        })
             for k in ntp_doc.data:
                 if not 'Entidad_Adjudicadora' in k:
                     continue
