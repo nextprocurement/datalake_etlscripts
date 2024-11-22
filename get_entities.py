@@ -202,12 +202,13 @@ def main():
                         if not 'Adjudicatario' in k:
                             continue
                         lb = k.replace('Adjudicatario/', '')
+
                         if not isinstance(ntp_doc.data[k], list):
                             adjudicatario[lb] = ntp_doc.data[k]
-                        else:
+                        elif len(ntp_doc.data[k]) > ind:                            
                             adjudicatario[lb] = ntp_doc.data[k][ind]
                         adjudicatario['type'] = 'Adjudicatario'
-                        logging.debug(adjudicatario)
+                    logging.debug(adjudicatario)
                     try:
                         entities_col.update_one(
                             {'_id': nif_ok},
@@ -223,7 +224,7 @@ def main():
                         logging.error(adjudicatario)
                 else:
                     logging.error(f"nif adj. incorrecto {nif}")
-
+    logging.info(f"DONE. Processed {num_ids} entries")
 
 
 
