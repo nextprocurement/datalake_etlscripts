@@ -31,7 +31,7 @@ def main():
     parser.add_argument('--debug', action='store_true', help="Add Debug information")
     parser.add_argument('-v','--verbose', action='store_true', help="Add Extra information")
     parser.add_argument('--dry_run', action='store_true', help="Do not alter DB, just check")
-
+    parser.add_argument('--drop', action='store_true', help="Drop existing predicted_cpv values")
     parser.add_argument('json_files', help="Input file", nargs='+')
 
     args = parser.parse_args()
@@ -61,7 +61,14 @@ def main():
     logging.info(f"Connected to {config['MONGODB_DB']}")
     place_cols = [db_lnk.db.get_collection(config["outsiders_col_prefix"]), db_lnk.db.get_collection(config["minors_col_prefix"])]
     logging.debug(f"Place collections: {place_cols}")
-    #TODO test connection
+    
+    if args.drop:
+        if not args.dry_run:
+            for col in place_cols:
+                logging.info(f"Dropping predicted_cpv from {col.name}")
+                col.update_many({}, {"$unset": {"nextp_enriched/predicted_cpv": ""}})
+        else:
+            logging.info("Would drop predicted_cpv (--dry_run)")
 
     for file in args.json_files:
         logging.info(f"Processing {file}")
@@ -90,7 +97,7 @@ def main():
                     logging.debug(f"Document {doc['procurement_id_x']} already found as {processed_docs[doc['procurement_id_x']]}")
                     ref_doc = ntp.NtpEntry()
                     ref_doc.load_from_db(col, processed_docs[doc['procurement_id_x']])
-
+                doc['cpv_code'] = str(doc['cpv_code']).ljust(8, '0')
                 ref_doc.data['nextp_enriched/predicted_cpv'] = doc
                 logging.debug(f"Document {ref_doc.ntp_id} to update ")
                 logging.debug(ref_doc.data['nextp_enriched/predicted_cpv'])
