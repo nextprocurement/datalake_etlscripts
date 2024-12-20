@@ -36,6 +36,21 @@ DNI_REGEX = r'^(\d{8})([A-Z])$'
 CIF_REGEX = r'^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$'
 NIE_REGEX = r'^[XYZ]\d{7,8}[A-Z]$'
 
+FIELDS_LIST = [
+    'FullName',
+    'Name',
+    'Province', 
+    'CompanyType', 
+    'CompanyDescription',
+    'Ciudad',
+    'Codigo_Postal',
+    'Identificador_de_Pais',
+    'Pais',
+    'es_PYME',
+    'es_UTE'                            
+]
+
+
 def process_nif(nif):   
     nif = str(nif).upper().replace('-','').replace(' ','').replace('.', '')
     logging.info(f"Checking NIF {nif}")
@@ -54,6 +69,23 @@ def process_nif(nif):
         req = requests.get(f"{API_PREFIX}/companies/{nif}")
         if req.status_code == 200:
             company_data = req.json()
+            logging.info(f"NIF/CIF {nif} found as {company_data['Name']}")
+            return company_data
+        req = requests.get(f"{API_PREFIX}/entities/{nif.upper()}")
+        if req.status_code == 200:
+            try:
+                company_data = req.json()
+            except json.decoder.JSONDecodeError:            
+                logging.error(f"Error decoding JSON for NIF {nif}")
+                return False 
+            print(company_data)
+            if 'Nombre_del_Adjudicatario' in company_data:
+                company_data['Name'] = company_data['Nombre_del_Adjudicatario']
+                del(company_data['Nombre_del_Adjudicatario'])
+            if 'Nombre' in company_data:
+                company_data['Name'] = company_data['Nombre']
+                del(company_data['Nombre'])
+            company_data['FullName'] = company_data['Name']
             logging.info(f"NIF/CIF {nif} found as {company_data['Name']}")
             return company_data
         logging.error(f"NIF/CIF {nif} not found as company")
@@ -147,16 +179,18 @@ def main():
                 for nif in data['NIFs']:
                     company_data = process_nif(nif)
                     if company_data:                        
-                        for key in ['FullName', 'Name', 'Province', 'CompanyType', 'CompanyDescription']:
-                            ref_doc.data['nextp_enriched/companies'][data['doc_name']]['NIFs'][nif][key] = company_data[key]
+                        for key in FIELDS_LIST:
+                            if key in company_data:
+                                ref_doc.data['nextp_enriched/companies'][data['doc_name']]['NIFs'][nif][key] = company_data[key]
 
                 for company in data['SINGLE_COMPANY']:
                     if 'NIF' in company:
                         nif = company['NIF']
                         company_data = process_nif(nif)
                         if company_data:
-                            for key in ['FullName','Name','Province', 'CompanyType', 'CompanyDescription']:
-                                ref_doc.data['nextp_enriched/companies'][data['doc_name']]['SINGLE_COMPANY'][key] = company_data[key]
+                            for key in FIELDS_LIST:
+                                if key in company_data:
+                                    ref_doc.data['nextp_enriched/companies'][data['doc_name']]['SINGLE_COMPANY'][key] = company_data[key]
 
                 logging.debug(f"Document {ref_doc.ntp_id} to update ")
                 logging.debug(ref_doc.data['nextp_enriched/companies'])
