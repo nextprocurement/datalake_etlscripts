@@ -44,6 +44,7 @@ def main():
     parser.add_argument('--ini', action='store', help='Initial document range')
     parser.add_argument('--fin', action='store', help='Final document range')
     parser.add_argument('--id', action='store', help='Selected document id')
+    parser.add_argument('--ids', action='store', help='Document id list')
     parser.add_argument('--where', action='store', default='disk', choices=['disk', 'gridfs', 'swift'], help='Selected storage (disk|gridfs|swift)')
     parser.add_argument('--folder', action='store', help='Selected Disk/Swift folder')
     parser.add_argument('--config', action='store', default='secrets.yml', help='Configuration file (default:secrets.yml)')
@@ -142,8 +143,27 @@ def main():
 
     if args.id is not None:
         query = {'_id': args.id}
+        doc = incoming_col.find_one(query)
+        if doc is None:
+            logging.error(f'{args.id} not found')
+            sys.exit
+        if 'obsolete_version' in doc:
+            logging.warning(f'{args.id} is obsolete')
+            last_vers = nu.get_last_active_version(doc['id'], incoming_col)
+            if last_vers:
+                query = {'_id': last_vers['_id']}
+            else:
+                logging.error(f'No active version found for {args.id}')
+                sys.exit()
+    elif args.ids is not None:
+        list_ids = []
+        with open(args.ids, 'r') as f:
+            for line in f:
+                list_ids.append(line.strip())
+        logging.info(f"Processing {len(list_ids)} ids") 
+        query = {'_id': {'$in': list_ids}}
     else:
-        query = [{'obsolete_version': {'$exists':0}}]
+        query = []
         if args.ini is not None:
             query.append({'_id':{'$gte': args.ini}})
         if args.fin is not None:
@@ -153,10 +173,13 @@ def main():
     num_ids = 0
     last_server = ''
 
-    for doc in list(incoming_col.find(query, {'_id':1})):
+    for doc in list(incoming_col.find(query, {'_id':1, 'obsolete_version':1})):
         ntp_id = doc['_id']
         if args.verbose:
             logging.info(f'Processing {ntp_id}')
+        if 'obsolete_version' in doc:
+            ntp_id = nu.get_last_active_version(ntp_id, incoming_col)['_id']
+            logging.info(f"Using last active version {ntp_id}")
         num_ids += 1
         ntp_doc = ntp.NtpEntry()
         ntp_doc.load_from_db(incoming_col, ntp_id)
