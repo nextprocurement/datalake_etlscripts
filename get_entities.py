@@ -157,13 +157,16 @@ def main():
                 if not 'Entidad_Adjudicadora' in k:
                     continue
                 lb = k.replace('Entidad_Adjudicadora/', '')
+                lb = k.replace('Entidad_Adjudicadora_Jerarquia/', 'Jerarquia/')
                 contracting_party[lb] = ntp_doc.data[k]
+                
 
             if 'nif' in contracting_party:
                 contracting_party['_id'] = contracting_party['nif'].replace('-', '')
                 contracting_party['nif_valid'] = process_nif(contracting_party['nif'])
                 contracting_party['type'] = 'Entidad_Adjudicadora'
                 logging.debug(contracting_party)
+            
                 try:
                     entities_col.update_one(
                         {'_id': contracting_party['_id']},
@@ -172,7 +175,7 @@ def main():
                     )
                     entities_col.update_one(
                         {'_id': contracting_party['_id']},
-                        {'$addToSet': {'contratos': ntp_id}}
+                        {'$addToSet': {'contratos': ntp_doc.data['id']}}
                     )
                 except Exception as e:
                     logging.error(e)
@@ -202,7 +205,8 @@ def main():
                         if not 'Adjudicatario' in k:
                             continue
                         lb = k.replace('Adjudicatario/', '')
-
+                        if k == 'Adjudicatario/Nombre_del_Adjudicatario':
+                            lb = 'Nombre'
                         if not isinstance(ntp_doc.data[k], list):
                             adjudicatario[lb] = ntp_doc.data[k]
                         elif len(ntp_doc.data[k]) > ind:                            
@@ -217,7 +221,7 @@ def main():
                         )
                         entities_col.update_one(
                             {'_id': nif_ok},
-                            {'$addToSet': {'contratos': ntp_id}}
+                            {'$addToSet': {'contratos': ntp_doc.data['id']}}
                         )
                     except Exception as e:
                         logging.error(e)
