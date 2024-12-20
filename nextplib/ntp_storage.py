@@ -3,6 +3,7 @@ import sys
 import os.path
 import logging
 import re
+import hashlib
 
 from os.path import join as opj
 from bson.regex import Regex
@@ -89,8 +90,9 @@ class NtpStorageGridFs (NtpStorage):
         ''' Stores file_name on gridfs'''
         #removing previous version if exists
         if contents:
+            md5_checksum = hashlib.md5(contents).hexdigest()
             self.delete_file(file_name)
-            self.gridfs.put(contents, filename=file_name)
+            self.gridfs.put(contents, filename=file_name, md5=md5_checksum)
 
     def file_read(self, file_name):
         ''' Retreives file_name from gridFS'''
@@ -110,6 +112,12 @@ class NtpStorageGridFs (NtpStorage):
         if self.file_exists(file_name):
             file_id = self.gridfs.find_one({'filename':file_name})._id
             self.gridfs.delete(file_id)
+
+    def rename_file(self, file_name, new_file_name):
+        ''' Rename file_name from gridFS'''
+        if self.file_exists(file_name):
+            file_id = self.gridfs.find_one({'filename':file_name})._id
+            self.gridfs.rename(file_id, new_file_name)
 
     def file_exists(self, file_name, no_ext=False):
         ''' Check whether file_name exists on gridFS'''
