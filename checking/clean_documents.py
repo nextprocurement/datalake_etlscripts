@@ -16,9 +16,8 @@ from mmb_data.mongo_db_connect import Mongo_db
 from mmb_data.mongo_db_bulk_write import MongoDBBulkWrite, CTS
 
 def is_valid_field(valid_fields, field):
-    field = field.split('.')[0].split(':')[0]
-    print(field)
-    if field in valid_fields:
+    field_clean = field.split('.')[0].split(':')[0]
+    if field_clean in valid_fields:
         return field
     return False
 
@@ -30,6 +29,7 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true', help='Extra progress information')
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
     parser.add_argument('--drop', action='store_true', help='drop added info')
+    parser.add_argument('--force_accept', action='store_true', help='force acceptance of field')
 
     args = parser.parse_args()
     # Setup logging
@@ -56,7 +56,7 @@ def main():
     mdb_session = db_lnk.client.start_session()
     logging.info("Starting mongodb session")
     place_cols = [
-        db_lnk.db.get_collection(config["outsiders_col_prefix"]), 
+        db_lnk.db.get_collection(config["outsiders_col_prefix"]),
         db_lnk.db.get_collection(config["minors_col_prefix"])
     ]
     logging.debug(f"Place collections: {place_cols}")
@@ -92,11 +92,13 @@ def main():
         if not ref_doc.data['id']:
             logging.error(f"Document {ntp_id} has no place_id")
             continue
+        if 'obsolete_version' in ref_doc.data:
+            logging.warning(f"Document {ntp_id} is obsolete")
         doc_versions = []
         field_ok = is_valid_field(valid_fields, field)
         if field_ok:
             logging.debug(f"Field {field_ok} is acceptable")
-        else: 
+        else:
             logging.debug(f"Field {field} is not acceptable")
         if file['md5']:
             for duplicate in files_col.find({'md5': file['md5']}):
@@ -118,8 +120,12 @@ def main():
             field_ok = field
 
         if not field_ok:
-            logging.error(f"Valid field name not found for {file['filename']}")
-            continue
+            if args.force_accept:
+                logging.warning(f"Valid field name not found for {file['filename']}, accepting it because of --force_accept")
+                field_ok = field
+            else:
+                logging.error(f"Valid field name not found for {file['filename']}")
+                continue
 
         place_filename = f"PL{format(int(ref_doc.data['id'].split('/')[-1]), '08d')}_{field_ok}"
         logging.info(f"Updating {file['filename']} to {place_filename}")
