@@ -31,7 +31,19 @@ def get_group(ntp_id):
         return 1
     return 0
 
-def get_id_range(args):
+def get_group_from_id(uri_prefixes, id):
+    ''' check which group minors or outsiders/insiders using place id'''
+    col = ''
+    for prefix in uri_prefixes:
+        if id.startswith(prefix):
+            col = uri_prefixes[prefix]
+    if col:
+        if col == 'minors':
+            return 1
+        return 0
+    return None
+
+def get_id_range(args): 
     if args.id is not None:
         id_range = args.id
     elif args.ini is not None or args.fin is not None:
@@ -142,9 +154,9 @@ def get_versions(new_id, col):
     return versions
 
 def get_active_version(id, col):
-    logging.debug(f"Getting active version for {id}")
     vers = col.find_one({'id': id, 'obsolete_version':{'$exists':0}})
-    logging.debug(vers)
+    if not vers:
+        return False
     return vers['_id']
 
 
