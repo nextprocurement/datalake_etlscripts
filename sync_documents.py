@@ -132,11 +132,11 @@ def main():
             logging.error("Origin and destination points to gridFS, exiting")
             sys.error(1)
         if where_from == 'gridfs':
-            log_message_i = f"Using Origin GridFS storage at {config['MONGODB_HOST']}"
+            log_message_i = f"Using Origin GridFS storage {config['documents_col']} at {config['MONGODB_HOST']}"
             from_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs(config['documents_col']))
             from_folder = config['documents_col']
         if where_to == 'gridfs':
-            log_message_o = f"Using Destination GridFS storage at {config['MONGODB_HOST']}"
+            log_message_o = f"Using Destination GridFS storage {config['documents_col']} at {config['MONGODB_HOST']}"
             to_storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs(config['documents_col']))
             to_folder = config['documents_col']
 
@@ -198,12 +198,13 @@ def main():
 
     if args.verbose:
         logging.info(f"id_range: {nu.get_id_range(args)}")
-
+    logging.info("Getting files available at origin")
     from_files = set(from_storage.file_list(
         id_range=nu.get_id_range(args),
         set_debug=args.debug
     ))
     logging.info(f"Origin: {len(from_files)} Files available at {args.folder_in} ")
+    logging.info("Getting files available at destination")
 
     to_files = set(to_storage.file_list(
         id_range=nu.get_id_range(args),
