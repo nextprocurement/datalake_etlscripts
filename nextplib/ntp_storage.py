@@ -86,16 +86,17 @@ class NtpStorageGridFs (NtpStorage):
         super().__init__(type_store=type_store)
         self.gridfs = gridfs_obj
 
-    def file_store(self, file_name, contents):
+    def file_store(self, file_name, contents, md5_checksum=None):
         ''' Stores file_name on gridfs'''
         #removing previous version if exists
         if contents:
-            md5_checksum = hashlib.md5(contents).hexdigest()
+            if md5_checksum is None: 
+                md5_checksum = hashlib.md5(contents).hexdigest()
             self.delete_file(file_name)
             self.gridfs.put(contents, filename=file_name, md5=md5_checksum)
 
     def file_read(self, file_name):
-        ''' Retreives file_name from gridFS'''
+        ''' Retrieves file_name from gridFS'''
         if self.file_exists(file_name):
             file_id = self.gridfs.find_one({'filename':file_name})._id
             try:
