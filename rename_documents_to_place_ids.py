@@ -68,12 +68,14 @@ def main():
     processed_docs_raw = list(files_col.find({'filename':regex}, {'filename':1, '_id':0 }))
     processed_docs = set(x['filename'] for x in processed_docs_raw)
     logging.info(f"Found {len(processed_docs)} processed docs")
-
+    docs_to_process = list(files_bck_col.find({}, {'filename':1, 'place_filename':1, 'md5':1, '_id':0 })) 
+    logging.info(f"Found {len(docs_to_process)} docs to process")
     num_proc = 0
     num_del = 0
     num_ren = 0
     num_err = 0
-    for file in files_bck_col.find({}, no_cursor_timeout=True, session=mdb_session):
+    #for file in files_bck_col.find({}, no_cursor_timeout=True, session=mdb_session):
+    for file in docs_to_process:
         if 'place_filename' not in file or not file['place_filename']:
             logging.error(f"File {file['_id']} has no place_filename")
             num_err += 1
@@ -85,7 +87,11 @@ def main():
         logging.info(f"Processing {file['filename']}")
         num_ren +=1
         if not args.dry_run:
-            storage.file_store(file['place_filename'], backup_storage.file_read(file['filename']))
+            storage.file_store(
+                file['place_filename'], 
+                backup_storage.file_read(file['filename']), 
+                md5_checksum=file['md5']
+            )
             logging.info(f"{file['filename']} stored to {file['place_filename']}")
         else:
             logging.info(f"{file['filename']} would be stored to {file['place_filename']} (--dry_run)")
