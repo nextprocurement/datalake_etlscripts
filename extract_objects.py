@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
-''' Script to extract entities (Licitadores / Adjudicatarios)
-    usage: get_entities.py [-h] [--replace] [--ini INI] [--fin FIN] [--id ID]
+''' Script to extract contract objects
+    usage: extract_objects.py [-h] [--replace] [--ini INI] [--fin FIN] [--id ID]
                             [--config CONFIG] [-v] [--debug]
                             [--group GROUP] [--drop]
 
@@ -98,7 +98,7 @@ def main():
         query = {'$and': query}
     num_ids = 0
 
-    
+
     for doc in list(incoming_col.find(query, {'_id' : 1, 'obsolete_version': 1})):
         ntp_id = doc['_id']
         if args.verbose:
@@ -112,7 +112,7 @@ def main():
         if 'obsolete_version' in ntp_doc.data and ntp_doc.data['obsolete_version']:
             logging.warning(f"{ntp_doc.data['_id']} is marked as obsolete, skipping")
             continue
-      
+
         object = {}
 
         for field in FIELDS:
@@ -125,7 +125,7 @@ def main():
         if object['nextp_enriched/predicted_cpv'] and 'objective' in object['nextp_enriched/predicted_cpv']:
                 object['nextp_enriched/predicted_cpv'] = object['nextp_enriched/predicted_cpv']['objective']
         print(json.dumps(object, ensure_ascii=False))
-    
+
     logging.info(f"DONE. Processed {num_ids} entries")
 
 
