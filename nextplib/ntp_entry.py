@@ -140,11 +140,16 @@ class NtpEntry:
             base = field
             url = unquote(self.data[field]).replace(' ', '%20').replace('+', '')
 
+        file_id = f"PL{format(int(self.data['id'].split('/')[-1]), '08d')}"
+
+        logging.debug(f"Assigned File ID {file_id}")
+
         if skip_early:
             if storage.type != 'gridfs':
                 logging.error(f"--skip_early only available for GridFS storage  (yet)")
                 sys.exit(1)
-            file_name_root = nu.get_file_name(self.ntp_id, filename, '')
+            #file_name_root = nu.get_file_name(self.ntp_id, filename, '')
+            file_name_root = nu.get_file_name(file_id, filename,'')
             if storage.file_exists(file_name_root, no_ext=True):
                 return cts.SKIPPED, field
         try:
@@ -195,8 +200,9 @@ class NtpEntry:
                         else:
                             return response.status_code, 'Error on redirect'
 
+                file_name = nu.get_file_name(file_id, filename, doc_type)
+                logging.info(f"About to process {file_name}")
                 if doc_type in cts.ACCEPTED_DOC_TYPES:
-                    file_name = nu.get_file_name(self.ntp_id, filename, doc_type)
                     if not scan_only and (replace or not storage.file_exists(file_name)):
                         storage.file_store(file_name, response.content)
                         return cts.STORE_OK, doc_type

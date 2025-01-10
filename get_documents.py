@@ -149,9 +149,9 @@ def main():
             sys.exit
         if 'obsolete_version' in doc:
             logging.warning(f'{args.id} is obsolete')
-            last_vers = nu.get_last_active_version(doc['id'], incoming_col)
+            last_vers = nu.get_active_version(doc['id'], incoming_col)
             if last_vers:
-                query = {'_id': last_vers['_id']}
+                query = {'_id': last_vers}
             else:
                 logging.error(f'No active version found for {args.id}')
                 sys.exit()
@@ -160,7 +160,7 @@ def main():
         with open(args.ids, 'r') as f:
             for line in f:
                 list_ids.append(line.strip())
-        logging.info(f"Processing {len(list_ids)} ids") 
+        logging.info(f"Processing {len(list_ids)} ids")
         query = {'_id': {'$in': list_ids}}
     else:
         query = []
@@ -168,12 +168,17 @@ def main():
             query.append({'_id':{'$gte': args.ini}})
         if args.fin is not None:
             query.append({'_id':{'$lte': args.fin}})
-        query = {'$and': query}
+        if query:
+            query = {'$and': query}
+        else:
+            query = {}
 
     num_ids = 0
     last_server = ''
+    docs_to_process = list(incoming_col.find(query, {'_id':1, 'obsolete_version':1}))
+    logging.info(f"Found {len(docs_to_process)} documents to process")
 
-    for doc in list(incoming_col.find(query, {'_id':1, 'obsolete_version':1})):
+    for doc in docs_to_process:
         ntp_id = doc['_id']
         if args.verbose:
             logging.info(f'Processing {ntp_id}')

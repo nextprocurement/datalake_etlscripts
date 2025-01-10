@@ -43,7 +43,7 @@ def get_group_from_id(uri_prefixes, id):
         return 0
     return None
 
-def get_id_range(args): 
+def get_id_range(args):
     if args.id is not None:
         id_range = args.id
     elif args.ini is not None or args.fin is not None:
@@ -162,6 +162,7 @@ def get_active_version(id, col):
 
 def get_last_active_version(new_data, versions):
     ''' Get last active document for tender'''
+    print(versions)
     last_vers = {'_id': 'ntp00000000'}
     for vers in versions:
         if vers['status'] == 'obsolete':
@@ -234,9 +235,9 @@ def get_server(data, field):
     base = field
     return urlparse(data[field]).netloc
 
-def get_file_name(ntp_id, field, ext):
+def get_file_name(id, field, ext):
     ''' Composes file name for stored documents'''
-    return f"{ntp_id}_{field}.{ext}"
+    return f"{id}_{field}.{ext}"
 
 def exists_update(new_update, existing_update):
     '''Check if new_update exists in previous'''
