@@ -57,7 +57,9 @@ def main():
     files_col = db_lnk.db.get_collection(config['documents_backup_col'] + '.files')
     ids_col = db_lnk.db.get_collection('docs_name_conv_1')
     buffer = MongoDBBulkWrite(ids_col, CTS['UPSERT'], 10000)
-    for file in files_col.find({}, projection={'_id':1, 'filename':1, 'place_filename':1}, no_cursor_timeout=True, session=mdb_session):
+    to_process = list(files_col.find({}, projection={'_id':1, 'filename':1, 'place_filename':1}, no_cursor_timeout=True, session=mdb_session))
+    logging.info(f"Found {len(to_process)} files to process")
+    for file in to_process:
         ntp_id, field = file['filename'].split('_', 1)
         col = place_cols[nu.get_group(ntp_id)]
         logging.info(f"Processing {file['filename']}")
