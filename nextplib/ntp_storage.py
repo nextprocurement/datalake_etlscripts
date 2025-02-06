@@ -1,14 +1,14 @@
-''' Classes NtoStorage '''
+''' Classes NtpStorage '''
 import sys
 import os.path
 import logging
 import re
-import hashlib
 
 from os.path import join as opj
 from bson.regex import Regex
 from gridfs.errors import CorruptGridFile
 import swiftclient as sw
+from nextplib import ntp_utils as nu
 
 def is_in_range(ntp_id, id_range):
     ''' Check whether ntp_id is in id_range'''
@@ -91,7 +91,7 @@ class NtpStorageGridFs (NtpStorage):
         #removing previous version if exists
         if contents:
             if md5_checksum is None: 
-                md5_checksum = hashlib.md5(contents).hexdigest()
+                md5_checksum = nu.get_md5(contents)
             self.delete_file(file_name)
             self.gridfs.put(contents, filename=file_name, md5=md5_checksum)
 
@@ -127,6 +127,10 @@ class NtpStorageGridFs (NtpStorage):
             return self.gridfs.exists({'filename':rgx})
         else:
             return self.gridfs.exists(filename=file_name)
+
+    def file_md5_exists(self, md5_checksum):
+        ''' Check whether md5_checksum exists on gridFS'''
+        return self.gridfs.exists({'md5':md5_checksum})
 
     def file_list(self, id_range=None, set_debug=False):
         ''' Obtains list of files in id_range'''

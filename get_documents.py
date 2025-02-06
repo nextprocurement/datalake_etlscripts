@@ -57,6 +57,8 @@ def main():
     parser.add_argument('--skip_early', action='store_true', help='Skip immediately if any file for the corresponding field is already stored')
     parser.add_argument('--skip_bad_servers', action='store_true', help='Skip servers with usual timeouts or missing documents')
     parser.add_argument('--group', action='store', help='Group: insiders|outsiders|minors', default='outsiders')
+    parser.add_argument('--check_md5', action='store_true', help='Check duplicates using md5 checksum')
+    parser.add_argument('--dry_run', action='store_true', help='Do not store documents')
 
     args = parser.parse_args()
     # Setup logging
@@ -83,6 +85,7 @@ def main():
     incoming_col_name = f"{args.group}_col_prefix"
     if incoming_col_name in config:
         incoming_col = db_lnk.db.get_collection(config[incoming_col_name])
+        logging.info(f"Using collection {config[incoming_col_name]}")
     else:
         logging.error(f"Group {args.group} invalid or missing")
         sys.exit()
@@ -110,6 +113,7 @@ def main():
         elif args.where == 'gridfs':
             logging.info(f"Using GridFS storage at {config['MONGODB_HOST']}")
             storage = ntpst.NtpStorageGridFs(gridfs_obj=db_lnk.get_gfs(config['documents_col']))
+
 
         elif args.where == 'swift':
             logging.info("Using Swift storage")
@@ -175,17 +179,23 @@ def main():
 
     num_ids = 0
     last_server = ''
-    docs_to_process = list(incoming_col.find(query, {'_id':1, 'obsolete_version':1}))
-    logging.info(f"Found {len(docs_to_process)} documents to process")
+    docs_to_process = list(incoming_col.find(query, {'_id':1, 'obsolete_version':1, 'id':1}))
+    max_docs = len(docs_to_process)
+    logging.info(f"Found {max_docs} tenders to process")
 
-    for doc in docs_to_process:
+    for doc in sorted(docs_to_process, key=lambda x: x['_id']):
         ntp_id = doc['_id']
-        if args.verbose:
-            logging.info(f'Processing {ntp_id}')
-        if 'obsolete_version' in doc:
-            ntp_id = nu.get_last_active_version(ntp_id, incoming_col)['_id']
-            logging.info(f"Using last active version {ntp_id}")
         num_ids += 1
+        if args.verbose:
+            logging.info(f'Processing {ntp_id} ({num_ids}/{max_docs})')
+
+        if 'obsolete_version' in doc:
+            new_id = nu.get_active_version(doc['id'], incoming_col)
+            if not new_id:
+                logging.error(f"No active version found for {ntp_id}")
+                continue
+            ntp_id = new_id
+            logging.info(f"Using active version {ntp_id}")
         ntp_doc = ntp.NtpEntry()
         ntp_doc.load_from_db(incoming_col, ntp_id)
         for url_field in ntp_doc.extract_urls():
@@ -226,16 +236,26 @@ def main():
                 storage=storage,
                 scan_only=args.scan_only,
                 allow_redirects=args.allow_redirects,
-                skip_early=args.skip_early
+                skip_early=args.skip_early,
+                check_md5=args.check_md5,
+                dry_run=args.dry_run
             )
 
             if args.verbose:
                 if results[0] == cts.SKIPPED:
                     logging.info(f"{file_name} skipped, File already exists and --replace not set or --scan_only")
+                elif results[0] == cts.SKIPPED_FILE:
+                    logging.info(f"{file_name} skipped, File already exists and --replace not set")
+                elif results[0] == cts.SKIPPED_MD5:
+                    logging.info(f"{file_name} skipped, found duplicated MD5")
+                elif results[0] == cts.SKIPPED_SCAN:
+                    logging.info(f"not storing {file_name} because --scan_only set")
+                elif results[0] == cts.SKIPPED_DRY:
+                    logging.info(f"not storing {file_name} because --dry_run set")
                 elif results[0] == cts.UNWANTED_TYPE:
                     logging.info(f"{file_name} skipped, unwanted file type {results[1]}")
                 elif results[0] == cts.STORE_OK:
-                    logging.info(f"File Stored as {nu.get_file_name(ntp_doc.ntp_id, file_name, results[1])}")
+                    logging.info(f"File Stored as {results[1]}")
                 elif results[0] == cts.SSL_ERROR:
                     logging.info(f"{url_field} unavailable, Reason: certificate error")
                 else:

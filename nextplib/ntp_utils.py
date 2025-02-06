@@ -3,6 +3,7 @@ import sys
 import re
 import os.path
 import logging
+import hashlib
 from urllib.parse import urlparse
 from datetime import datetime
 from unidecode import unidecode
@@ -44,6 +45,7 @@ def get_group_from_id(uri_prefixes, id):
     return None
 
 def get_id_range(args):
+    ''' Get id range from arguments'''
     if args.id is not None:
         id_range = args.id
     elif args.ini is not None or args.fin is not None:
@@ -154,6 +156,7 @@ def get_versions(new_id, col):
     return versions
 
 def get_active_version(id, col):
+    ''' Get active version of obsolete tender'''
     vers = col.find_one({'id': id, 'obsolete_version':{'$exists':0}})
     if not vers:
         return False
@@ -162,7 +165,7 @@ def get_active_version(id, col):
 
 def get_last_active_version(new_data, versions):
     ''' Get last active document for tender'''
-    print(versions)
+    #print(versions)
     last_vers = {'_id': 'ntp00000000'}
     for vers in versions:
         if vers['status'] == 'obsolete':
@@ -290,3 +293,7 @@ def find_previous_doc(data, col):
             old_doc = vers
             break
     return old_doc
+
+def get_md5(contents):
+    '''Calculate md5 hash for contents'''
+    return hashlib.md5(contents).hexdigest()

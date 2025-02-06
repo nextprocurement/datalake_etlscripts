@@ -130,7 +130,9 @@ class NtpEntry:
             scan_only=False,
             allow_redirects=False,
             verify_ca=True,
-            skip_early=False
+            skip_early=False,
+            check_md5=True,
+            dry_run=False
     ):
         ''' Retrieves and stores document accounting for possible redirections'''
         if ':' in field:
@@ -203,10 +205,19 @@ class NtpEntry:
                 file_name = nu.get_file_name(file_id, filename, doc_type)
                 logging.info(f"About to process {file_name}")
                 if doc_type in cts.ACCEPTED_DOC_TYPES:
-                    if not scan_only and (replace or not storage.file_exists(file_name)):
+                    if storage.file_exists(file_name) and not replace:
+                        return cts.SKIPPED_FILE, doc_type
+                    if check_md5:
+                        md5 = nu.get_md5(response.content)
+                        if storage.file_md5_exists(md5) and not storage.file_exists(file_name):
+                            return cts.SKIPPED_MD5, doc_type
+                    if not dry_run and not scan_only:
                         storage.file_store(file_name, response.content)
-                        return cts.STORE_OK, doc_type
-                    return cts.SKIPPED, doc_type
+                        return cts.STORE_OK, file_name
+                    if scan_only:
+                        return cts.SKIPPED_SCAN, doc_type
+                    if dry_run:
+                        return cts.SKIPPED_DRY, doc_type
                 return cts.UNWANTED_TYPE, doc_type
 
             logging.error(f"{HTTPStatus(response.status_code).phrase}: {url}")
