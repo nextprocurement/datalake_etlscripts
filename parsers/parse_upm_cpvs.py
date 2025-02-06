@@ -78,6 +78,11 @@ def main():
         with open(file) as json_file:
             data = json.load(json_file)
             for doc in data:
+                if 'procurement_id_x' not in doc:
+                    logging.warning("No procurement_id_x in document, recovering from id")
+                    doc['procurement_id_x'] = nu.get_active_version(
+                        doc['id'], nu.get_group_from_id(config['uri_prefixes'], doc['id'])
+                    )
                 logging.debug(f"Processing {doc['procurement_id_x']}")
                 if doc['procurement_id_x'] not in processed_docs:
                     col = place_cols[nu.get_group(doc['procurement_id_x'])]
