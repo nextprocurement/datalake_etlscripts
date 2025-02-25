@@ -22,6 +22,7 @@ options:
   -v, --verbose         Extra progress information
   --debug               Extra debug information
   --check_only          Check only, no transfer
+  --file_list           list of file in a file
 '''
 
 import sys
@@ -65,6 +66,7 @@ def main():
     parser.add_argument('--debug',action='store_true', help='Extra debug information')
     parser.add_argument('--check_only',action='store_true', help='Check only, no transfer')
     parser.add_argument('--patch_list', action='store', help='Prepare a listing of modifications')
+    parser.add_argument('--file_list', action='store', help='File with list of documents to transfer')
 
     args = parser.parse_args()
     # Setup logging
@@ -179,30 +181,40 @@ def main():
     if args.verbose:
         logging.info(log_message_i)
         logging.info(log_message_o)
-        logging.info("Getting ids...")
 
-    for ntp_id in (args.id, args.ini, args.fin):
-        if ntp_id is not None and not nu.check_ntp_id(ntp_id):
-            logging.error(f'{ntp_id} is not a valid ntp id')
-            sys.exit()
-
-    if args.id is not None:
-        query = {'_id': args.id}
+    if args.file_list:
+        from_files = set()
+        logging.info(f"Reading input file ids from {args.file_list}")
+        with open(args.file_list, 'r') as file_list:
+            for line in file_list:
+                from_files.add(line.rstrip())
     else:
-        query = [{}]
-        if args.ini is not None:
-            query.append({'_id':{'$gte': args.ini}})
-        if args.fin is not None:
-            query.append({'_id':{'$lte': args.fin}})
-        query = {'$and': query}
+        if args.verbose:
+            logging.info("Getting ids...")
 
-    if args.verbose:
-        logging.info(f"id_range: {nu.get_id_range(args)}")
-    logging.info("Getting files available at origin")
-    from_files = set(from_storage.file_list(
-        id_range=nu.get_id_range(args),
-        set_debug=args.debug
-    ))
+        for ntp_id in (args.id, args.ini, args.fin):
+            if ntp_id is not None and not nu.check_ntp_id(ntp_id):
+             logging.error(f'{ntp_id} is not a valid ntp id')
+             sys.exit()
+
+        if args.id is not None:
+            query = {'_id': args.id}
+        else:
+            query = [{}]
+            if args.ini is not None:
+                query.append({'_id':{'$gte': args.ini}})
+            if args.fin is not None:
+                query.append({'_id':{'$lte': args.fin}})
+            query = {'$and': query}
+
+        if args.verbose:
+            logging.info(f"id_range: {nu.get_id_range(args)}")
+        logging.info("Getting files available at origin")
+        from_files = set(from_storage.file_list(
+            id_range=nu.get_id_range(args),
+            set_debug=args.debug
+        ))
+
     logging.info(f"Origin: {len(from_files)} Files available at {args.folder_in} ")
     logging.info("Getting files available at destination")
 
