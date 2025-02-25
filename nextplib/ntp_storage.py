@@ -60,6 +60,10 @@ class NtpStorageDisk (NtpStorage):
             logging.error(f"Reading file {opj(self.data_dir, file_name)} failed")
         return ''
 
+    def file_md5_exists(self, md5_checksum):
+        ''' Check whether md5_checksum exists on Disk Disabled'''
+        return false
+
     def delete_file(self, file_name):
         ''' Delete file_name from storage '''
         try:
@@ -72,7 +76,7 @@ class NtpStorageDisk (NtpStorage):
         ''' Check whether file_name exists'''
         return os.path.exists(opj(self.data_dir, file_name))
 
-    def file_list(self, id_range=None, set_Debug=False):
+    def file_list(self, id_range=None, set_debug=False):
         ''' Obtains list of file within id_range'''
         file_list = []
         for file in os.listdir(self.data_dir):
@@ -90,7 +94,7 @@ class NtpStorageGridFs (NtpStorage):
         ''' Stores file_name on gridfs'''
         #removing previous version if exists
         if contents:
-            if md5_checksum is None: 
+            if md5_checksum is None:
                 md5_checksum = nu.get_md5(contents)
             self.delete_file(file_name)
             self.gridfs.put(contents, filename=file_name, md5=md5_checksum)

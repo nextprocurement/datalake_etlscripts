@@ -27,5 +27,6 @@ ERROR = -1
 MIN_ORDER = {
     'insiders': 0,
     'outsiders': 0,
-    'minors': 10000000
+    'minors': 10000000,
+    'DA': 20000000
 }

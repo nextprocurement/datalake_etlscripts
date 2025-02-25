@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 import dns.resolver
+from nextplib import ntp_constants as cts
 
 def parse_ntp_id(ntp_id):
     ''' Get document order from ntp_id
@@ -65,10 +66,13 @@ def get_new_dbfield(col):
 def get_last_order(group, col):
     ''' Get order of last document in collection'''
     if group in ['outsiders', 'insiders']:
-        cond = {'_id': {'$regex': 'ntp0'}}
+        cond = {'_id': {'$regex': '^ntp0'}}
+    elif group == 'minors':
+        cond = {'_id': {'$regex': '^ntp1'}}
+    elif group == 'DA': 
+        cond = {'_id': {'$regex': '^ntp2'}}
     else:
-        cond = {'_id': {'$regex': 'ntp1'}}
-
+        logging.error(f"Group {group} not found")
     max_id = list(col.aggregate(
         [
             {'$match': cond},
@@ -79,7 +83,7 @@ def get_last_order(group, col):
         id_num = parse_ntp_id(max_id[0]['value'])
     else:
         logging.info("No records found")
-        id_num = cts.MIN_ORDER(group)
+        id_num = cts.MIN_ORDER[group]
     return id_num
 
 def parse_parquet(pd_data_row, new_cols):
@@ -125,6 +129,50 @@ def parse_parquet(pd_data_row, new_cols):
         new_data['data_model'] = 'v04/2024'
     return new_data
 
+def parse_parquet_DA(pd_data_row, new_cols):
+    ''' Parse data Pandas' data row read from a parquet file (extended for Datos Abiertos)
+        Parameters:
+            pd_data_row (Pandas' data row): Single entry from pandas dataframe
+            new_cols (dict): Dictionary with translated columns names
+    '''
+    new_data = {}
+    for col in pd_data_row:        
+        col_str = str(col).replace('-','').replace(' ','')
+        if isinstance(pd_data_row[col], np.ndarray):
+            tmp_list = []
+            for item in pd_data_row[col].tolist():
+                if item is None:
+                    continue
+                if item.startswith('['):
+                    try:
+                        new_list = eval(item) # Transform string list into actual list
+                    except Exception as e:
+                        logging.error(e)
+                        logging.error(item)
+                        new_list = item
+                    tmp_list.append(new_list)
+                else:
+                    tmp_list.append(item)
+            if len(tmp_list) == 1:
+                tmp_list = tmp_list[0] # Remove useless list level for single item list.
+            pd_data_row[col] = tmp_list
+            if pd_data_row[col] == 'nan':
+                pd_data_row[col] = ''
+        elif pd.isna(pd_data_row[col]):
+            pd_data_row[col] = ''
+        try:
+            if new_cols.loc[col_str]['DBFIELD'] in new_data:
+                if not isinstance(new_data[new_cols.loc[col_str]['DBFIELD']], list):
+                    new_data[new_cols.loc[col_str]['DBFIELD']] = [new_data[new_cols.loc[col_str]['DBFIELD']]]
+                    logging.debug(f"WARNING: multiple values found for {new_cols.loc[col_str]['DBFIELD']}, appending")
+                new_data[new_cols.loc[col_str]['DBFIELD']].append(pd_data_row[col])
+            else:
+                new_data[new_cols.loc[col_str]['DBFIELD']] = pd_data_row[col]
+        except KeyError:
+            mod_col = get_new_dbfield(col_str)
+            logging.error(f'"{col_str}"\t"{mod_col}"\t"string"\n')
+        new_data['data_model'] = 'v04/2024'
+    return new_data
 def get_versions(new_id, col):
     ''' get list versions of the incoming document'''
     versions = []
