@@ -44,18 +44,25 @@ def main():
 
     logging.info(f"Collection: {args.collection}")
    
-    query = [{'obsolete_version': {'$exists':False}}]
+    query = {'obsolete_version': {'$exists':False}}
    
-    tenders_list = list(incoming_col.find(query, {'_id' : 1})):
+    tenders_list = list(incoming_col.find(query, {'_id' : 1}))
     logging.info(f"Found {len(tenders_list)} tenders")
     
     for tender in tenders_list:
         tender_id = tender['_id']
         doc = ntp.NtpEntry()
         doc.load_from_db(incoming_col, tender_id)
-        unique_code = doc.add_unique_code()
-        #doc.commit_to_db(incoming_col, tender_id)
-        logging.info(f"Added unique code {unique_code} to {tender_id}")
+        if 'codigo_unico' not in doc.data:
+            unique_code = doc.add_unique_code()
+            doc.commit_to_db(incoming_col)
+            logging.info(f"Added unique code {unique_code} to {tender_id}")
+        else:
+            unique_code = doc.data['codigo_unico']
+            logging.info(f"Unique code {unique_code} already exists for {tender_id}")
+
         
         
 
+if __name__ == '__main__':
+    main()
