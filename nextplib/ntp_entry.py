@@ -66,7 +66,25 @@ class NtpEntry:
             'updated_to': update_id
         }
         self.data = new_data
+    
+    def add_unique_code(self):
+        # Use the first 50 characters of 'title' if it exists
+        if 'title' in self.data and self.data['title']:
+            inicio_title = self.data['title'][:50]
+        else:
+            # Generate a unique random string combined with a UUID
+            random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=30))
+            unique_id = str(uuid.uuid4())[:20]  # First 20 chars of UUID
+            inicio_title = f"{random_part}_{unique_id}"  # Ensures uniqueness
 
+        contract_folder_id = self.data.get('Datos_Generales_del_Expediente/Numero_de_Expediente', 'UNKNOWN')
+        country_subentity_code = self.data.get('Lugar_de_ejecucion/Codigo_de_Subentidad_Territorial', 'UNKNOWN')
+
+        nom = self.data.get('Entidad_Adjudicadora/Nombre', '')
+        nom = nom[:50] if nom else ""
+        self.data['codigo_unico'] = f"{inicio_title}&{contract_folder_id}&{country_subentity_code}&{nom}"
+        
+        return self.data['codigo_unico']
 
     def commit_to_db(self, col, update=False):
         '''Commit document to db'''
