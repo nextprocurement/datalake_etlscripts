@@ -69,8 +69,10 @@ def get_last_order(group, col):
         cond = {'_id': {'$regex': '^ntp0'}}
     elif group == 'minors':
         cond = {'_id': {'$regex': '^ntp1'}}
-    elif group == 'DA': 
+    elif group == 'DA':
         cond = {'_id': {'$regex': '^ntp2'}}
+    elif group == 'tmp_DA':
+        cond = {'_id': {'$regex': '^ntp9'}}
     else:
         logging.error(f"Group {group} not found")
     max_id = list(col.aggregate(
@@ -136,7 +138,7 @@ def parse_parquet_DA(pd_data_row, new_cols):
             new_cols (dict): Dictionary with translated columns names
     '''
     new_data = {}
-    for col in pd_data_row:        
+    for col in pd_data_row:
         col_str = str(col).replace('-','').replace(' ','')
         if isinstance(pd_data_row[col], np.ndarray):
             tmp_list = []

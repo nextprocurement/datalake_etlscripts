@@ -28,5 +28,6 @@ MIN_ORDER = {
     'insiders': 0,
     'outsiders': 0,
     'minors': 10000000,
-    'DA': 20000000
+    'DA': 20000000,
+    'tmp_DA': 90000000
 }

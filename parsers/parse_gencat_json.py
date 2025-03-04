@@ -64,8 +64,11 @@ def main():
     logging.info(f"Connected to {config['MONGODB_DB']}")
     #place_cols = [db_lnk.db.get_collection(config["outsiders_col_prefix"]), db_lnk.db.get_collection(config["minors_col_prefix"])]
     gencatDA_col = db_lnk.db.get_collection("tmp_openData")
-    logging.debug(f"Place collection: {gencatDA_col}")
-    
+    place_col = db_lnk.db.get_collection("place")
+
+    logging.debug(f"OpenData collection: {gencatDA_col}")
+    logging.debug(f"OpenData collection: {place_col}")
+
     if args.drop:
         if not args.dry_run:
             logging.info(f"Dropping data from {gencatDA_col.name}")
@@ -75,8 +78,12 @@ def main():
 
     new_cols = pd.read_csv(args.columns_file, sep='\t', index_col='ORIGINAL')
 
+
     tmp_id = 0
-    id_num = 0
+
+    id_num = nu.get_last_order('tmp_DA', gencatDA_col)
+
+    logging.info(f"Starting at {id_num}")
 
     for file in args.json_files:
         logging.info(f"Processing {file}")
@@ -99,21 +106,33 @@ def main():
                     except KeyError:
                         mod_col = nu.get_new_dbfield(col)
                         logging.error(f'"{col}"\t"{mod_col}"\t"string"\n')
-                if 'id' not in new_data or not new_data['id']:
-                    logging.warning(f"Missing id field, using ntp9{str(tmp_id).zfill(7)}")
-                    new_data['id'] = f"ntp9{str(tmp_id).zfill(7)}"
-                    tmp_id += 1
-                logging.info(f"Processing {new_data['id']}")
+
                 new_doc = ntp.NtpEntry()
-                new_doc.load_data(id_num + 1, new_data)
+                if 'indice_unico' not in new_data or not new_data['indice_unico']:
+                    logging.error(f"Missing unique code in {new_data['id']}")
+                    continue
+                doc = gencatDA_col.find_one({'indice_unico': new_data['indice_unico']})
+                if doc:
+                    logging.info(f"Found {new_data['indice_unico']} at {doc['_id']} in openData")
+                    new_doc.load_from_db(gencatDA_col, doc['_id'])
+                else:
+                    new_doc.load_data(id_num + 1, new_data)
+
+                if 'id' not in new_doc.data or not new_doc.data['id']:
+                    ref_doc = place_col.find_one({'indice_unico': new_data['indice_unico']})
+                    if ref_doc:
+                        logging.info(f"Found {new_data['indice_unico']} at place {ref_doc['id']}")
+                        new_doc.data['id'] = ref_doc['id']
+                    else:
+                        logging.warning(f"Missing id field, using ntp9{str(tmp_id).zfill(7)}")
+                        new_data['id'] = f"ntp9{str(tmp_id).zfill(7)}"
+                        tmp_id += 1
+
                 if not args.dry_run:
                     tmp_num = new_doc.commit_to_db(gencatDA_col, update=False)
                     id_num = max(tmp_num, id_num)
                 else:
-                    print(new_doc)
-                
-
-                
+                    logging.info(f"Would upload {new_doc.ntp_id}")
 
         logging.info(f"Processed {len(processed_docs)} documents")
     logging.info("Done")
