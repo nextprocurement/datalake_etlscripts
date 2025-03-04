@@ -4,6 +4,7 @@ import copy
 import logging
 import random
 import uuid
+import string
 from urllib.parse import unquote
 from http import HTTPStatus
 import requests
@@ -68,7 +69,7 @@ class NtpEntry:
             'updated_to': update_id
         }
         self.data = new_data
-    
+
     def add_unique_code(self):
         # Use the first 50 characters of 'title' if it exists
         if 'title' in self.data and self.data['title']:
@@ -84,9 +85,9 @@ class NtpEntry:
 
         nom = self.data.get('Entidad_Adjudicadora/Nombre', '')
         nom = nom[:50] if nom else ""
-        self.data['codigo_unico'] = f"{inicio_title}&{contract_folder_id}&{country_subentity_code}&{nom}"
-        
-        return self.data['codigo_unico']
+        self.data['indice_unico'] = f"{inicio_title}&{contract_folder_id}&{country_subentity_code}&{nom}"
+
+        return self.data['indice_unico']
 
     def commit_to_db(self, col, update=False):
         '''Commit document to db'''

@@ -7,6 +7,7 @@ import re
 import json
 import random
 import uuid
+import string
 from yaml import load, CLoader
 from nextplib import ntp_entry as ntp, ntp_constants as cts, ntp_utils as nu
 from mmb_data.mongo_db_connect import Mongo_db
@@ -45,26 +46,24 @@ def main():
     incoming_col = db_lnk.db.get_collection(args.collection)
 
     logging.info(f"Collection: {args.collection}")
-   
-    query = {'obsolete_version': {'$exists':False}}
-   
+
+    query = {'obsolete_version': {'$exists':False}, 'indice_unico': {'$exists':False}}
+
     tenders_list = list(incoming_col.find(query, {'_id' : 1}))
     logging.info(f"Found {len(tenders_list)} tenders")
-    
+
     for tender in tenders_list:
         tender_id = tender['_id']
         doc = ntp.NtpEntry()
         doc.load_from_db(incoming_col, tender_id)
-        if 'codigo_unico' not in doc.data:
+        if 'indice_unico' not in doc.data:
             unique_code = doc.add_unique_code()
             doc.commit_to_db(incoming_col)
             logging.info(f"Added unique code {unique_code} to {tender_id}")
         else:
-            unique_code = doc.data['codigo_unico']
+            unique_code = doc.data['indice_unico']
             logging.info(f"Unique code {unique_code} already exists for {tender_id}")
 
-        
-        
 
 if __name__ == '__main__':
     main()
