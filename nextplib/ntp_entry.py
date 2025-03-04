@@ -2,6 +2,8 @@
 import sys
 import copy
 import logging
+import random
+import uuid
 from urllib.parse import unquote
 from http import HTTPStatus
 import requests
