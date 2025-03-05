@@ -51,18 +51,21 @@ def main():
 
     tenders_list = list(incoming_col.find(query, {'_id' : 1}))
     logging.info(f"Found {len(tenders_list)} tenders")
+    num_tenders = len(tenders_list)
+    cur_tender = 0
 
     for tender in tenders_list:
+        cur_tender += 1
         tender_id = tender['_id']
         doc = ntp.NtpEntry()
         doc.load_from_db(incoming_col, tender_id)
         if 'indice_unico' not in doc.data:
             unique_code = doc.add_unique_code()
             doc.commit_to_db(incoming_col)
-            logging.info(f"Added unique code {unique_code} to {tender_id}")
+            logging.info(f"Added unique code {unique_code} to {tender_id} ({cur_tender}/{num_tenders})")
         else:
             unique_code = doc.data['indice_unico']
-            logging.info(f"Unique code {unique_code} already exists for {tender_id}")
+            logging.info(f"Unique code {unique_code} already exists for {tender_id} ({cur_tender}/{num_tenders})")
 
 
 if __name__ == '__main__':
