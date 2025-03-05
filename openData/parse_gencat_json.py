@@ -21,10 +21,12 @@ import sys
 import argparse
 import logging
 import json
+import re
 import pandas as pd
 from yaml import load, CLoader
 from nextplib import ntp_entry as ntp, ntp_constants as cts, ntp_utils as nu
 from mmb_data.mongo_db_connect import Mongo_db
+from pymongo.collation import Collation
 
 def main():
     parser = argparse.ArgumentParser(description='Parse GENCAT OpenData')
@@ -121,18 +123,25 @@ def main():
                     new_doc.load_data(id_num + 1, new_data)
 
                 if 'id' not in new_doc.data or not new_doc.data['id'] or new_doc.data['id'].startswith('ntp9'):
-                    ref_doc = place_col.find_one({'indice_unico': new_data['indice_unico']})
+                    # regx = re.compile(re.escape(new_data['indice_unico']), re.IGNORECASE)
+                    # ref_doc = place_col.find_one({'indice_unico': regx})
+                    ref_doc = place_col.find_one(
+                            {'indice_unico': new_data['indice_unico']},
+                            collation=Collation('es', strength=1)
+                    )
+
                     if ref_doc:
                         logging.info(f"Found {new_data['indice_unico']} at place {ref_doc['id']}")
                         new_doc.data['id'] = ref_doc['id']
                     else:
                         logging.warning(f"Missing id field for {new_data['indice_unico']}")
                 else:
-                    logging.info(f"Found id {new_doc.data['id']}")
+                    logging.info(f"Doc has id {new_doc.data['id']}")
 
                 if not args.dry_run:
-                    tmp_num = new_doc.commit_to_db(gencatDA_col, update=False)
-                    id_num = max(tmp_num, id_num)
+                    #tmp_num = new_doc.commit_to_db(gencatDA_col, update=False)
+                    gencatDA_col.replace_one({'_id': new_doc.ntp_id}, new_doc.data, upsert=True)
+                    id_num = max(new_doc.ntp_order, id_num)
                 else:
                     logging.info(f"Would upload {new_doc.ntp_id}")
 
