@@ -31,6 +31,10 @@ def get_group(ntp_id):
     ''' check which group minors or outsiders/insiders'''
     if ntp_id.startswith('ntp1'):
         return 1
+    elif ntp_id.startswith('ntp2'):
+        return 2
+    elif ntp_id.startswith('ntp9'):
+        return 3
     return 0
 
 def get_group_from_id(uri_prefixes, id):
