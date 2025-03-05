@@ -78,7 +78,6 @@ def main():
 
     new_cols = pd.read_csv(args.columns_file, sep='\t', index_col='ORIGINAL')
 
-
     tmp_id = 0
 
     id_num = nu.get_last_order('tmp_DA', gencatDA_col)
@@ -88,7 +87,7 @@ def main():
     for file in args.json_files:
         logging.info(f"Processing {file}")
 
-        processed_docs = {}
+        processed_docs = 0
 
         with open(file) as json_file:
             data = json.load(json_file)
@@ -111,22 +110,25 @@ def main():
                 if 'indice_unico' not in new_data or not new_data['indice_unico']:
                     logging.error(f"Missing unique code in {new_data['id']}")
                     continue
+
                 doc = gencatDA_col.find_one({'indice_unico': new_data['indice_unico']})
+
                 if doc:
-                    logging.info(f"Found {new_data['indice_unico']} at {doc['_id']} in openData")
+                    logging.info(f"Found {new_data['indice_unico']} at {doc['_id']} in openData, updating")
                     new_doc.load_from_db(gencatDA_col, doc['_id'])
+                    new_doc.merge_data(new_data)
                 else:
                     new_doc.load_data(id_num + 1, new_data)
 
-                if 'id' not in new_doc.data or not new_doc.data['id']:
+                if 'id' not in new_doc.data or not new_doc.data['id'] or new_doc.data['id'].startswith('ntp9'):
                     ref_doc = place_col.find_one({'indice_unico': new_data['indice_unico']})
                     if ref_doc:
                         logging.info(f"Found {new_data['indice_unico']} at place {ref_doc['id']}")
                         new_doc.data['id'] = ref_doc['id']
                     else:
-                        logging.warning(f"Missing id field, using ntp9{str(tmp_id).zfill(7)}")
-                        new_data['id'] = f"ntp9{str(tmp_id).zfill(7)}"
-                        tmp_id += 1
+                        logging.warning(f"Missing id field for {new_data['indice_unico']}")
+                else:
+                    logging.info(f"Found id {new_doc.data['id']}")
 
                 if not args.dry_run:
                     tmp_num = new_doc.commit_to_db(gencatDA_col, update=False)
@@ -134,7 +136,9 @@ def main():
                 else:
                     logging.info(f"Would upload {new_doc.ntp_id}")
 
-        logging.info(f"Processed {len(processed_docs)} documents")
+                processed_docs += 1
+
+        logging.info(f"Processed {processed_docs} documents")
     logging.info("Done")
 
 
