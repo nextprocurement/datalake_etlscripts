@@ -104,8 +104,6 @@ def main():
         if where_from == 'disk':
             if from_folder is None:
                 from_folder = config['TMPDIR']
-            else:
-                from_folder = args.from_folder
             if not os.path.isdir(from_folder):
                 logging.error(f"{from_folder} does not exist, exiting")
                 sys.exit(1)
