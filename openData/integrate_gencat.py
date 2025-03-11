@@ -6,7 +6,7 @@
 Parse NextProcurement parquets
 
 positional arguments:
-  json_files       CPV data
+  json_files       Gencat data
 
 options:
   -h, --help       show this help message and exit
@@ -98,18 +98,26 @@ def main():
                         continue
                     if isinstance(da_doc.data[k], list) and len(da_doc.data[k]) == 1:
                         da_doc.data[k] = da_doc.data[k][0]
+
                     if not da_doc.data[k] or da_doc.data[k] in ['nan']:
                         continue
+
                     if isinstance(da_doc.data[k], list) and not any(da_doc.data[k]):
                         continue
+
                     if k not in place_doc.data or not place_doc.data[k]:
                         new.append(k)
                         logging.debug(f"New field {k} {da_doc.data[k]}")
                         place_doc.data[k] = da_doc.data[k]
-                    elif da_doc.data[k] != place_doc.data[k]:
+
+                    elif da_doc.data[k] != place_doc.data[k] and str(da_doc.data[k]) != str(place_doc.data[k]):
                         mod.append(k)
                         logging.debug(f"Modified field {k} {da_doc.data[k]} != {place_doc.data[k]}")
-                        place_doc.data[f"{k}_gc"] = da_doc.data[k]
+                        if re.match(r'contrataciopublica.cat', place_doc.data['link']) and 'link' in da_doc.data:
+                            place_doc.data['link_old']   = place_doc.data['link']
+                            place_doc.data['link']       = da_do.data['link']
+                        else:
+                            place_doc.data[k] = da_doc.data[k]
                 if not args.dry_run:
                     place_doc.commit_to_db(place_col, update=False)
                     logging.info(f"Updated {place_doc.ntp_id} with DA doc {doc['_id']}")
