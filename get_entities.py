@@ -102,8 +102,8 @@ def main():
 
     entities_col = db_lnk.db.get_collection('entities')
     
-    if args.drop:
-        entities_col.delete_many({})
+    #if args.drop:
+    #    entities_col.delete_many({})
 
     if args.verbose:
         logging.info("Getting ids...")
@@ -124,22 +124,33 @@ def main():
         query = {'$and': query}
     num_ids = 0
 
-    for doc in list(incoming_col.find(query, {'_id' : 1, 'obsolete_version': 1})):
+    # Fetch all ids to avoid cursor timeouts
+    list_ids = list(incoming_col.find(query, {'_id' : 1, 'obsolete_version': 1}))
+    logging.info(f"Found {len(list_ids)} to process")
+
+    processed_nifs = set()
+    for nif in entities_col.find({}, projection={'_id':1}):
+        processed_nifs.add(nif['_id'])
+    logging.info(f"Found {len(processed_nifs)} entities")
+
+    for doc in sorted(list_ids, key=lambda x: x['_id']):
         ntp_id = doc['_id']
         if args.verbose:
             logging.info(f'Processing {ntp_id}')
         num_ids += 1
         ntp_doc = ntp.NtpEntry()
         ntp_doc.load_from_db(incoming_col, ntp_id)
-        if 'data_model' not in ntp_doc.data:
-            logging.warning(f"{ntp_doc.data['_id']} is not in the appropriate data model, skipping")
-            continue
+        #if 'data_model' not in ntp_doc.data:
+        #    logging.warning(f"{ntp_doc.data['_id']} is not in the appropriate data model, skipping")
+        #    continue
         if 'obsolete_version' in ntp_doc.data and ntp_doc.data['obsolete_version']:
             logging.warning(f"{ntp_doc.data['_id']} is marked as obsolete, skipping")
             continue
         contracting_party = {}
         contracting_party['other_ids'] = []
         if 'Entidad_Adjudicadora/ID' in ntp_doc.data and ntp_doc.data['Entidad_Adjudicadora/ID']:
+            if 'Entidad_Adjudicadora/IDschemeName' not in ntp_doc.data:
+                ntp_doc.data['Entidad_Adjudicadora/IDschemeName'] = 'NIF'
             if not isinstance(ntp_doc.data['Entidad_Adjudicadora/ID'], list):
                 ntp_doc.data['Entidad_Adjudicadora/ID'] = [ntp_doc.data['Entidad_Adjudicadora/ID']]
                 ntp_doc.data['Entidad_Adjudicadora/IDschemeName'] = [ntp_doc.data['Entidad_Adjudicadora/IDschemeName']]
@@ -166,6 +177,11 @@ def main():
                 contracting_party['nif_valid'] = process_nif(contracting_party['nif'])
                 contracting_party['type'] = 'Entidad_Adjudicadora'
                 logging.debug(contracting_party)
+                if contracting_party['_id'] in processed_nifs:
+                    logging.info(f"Already processed, skipping")
+                    continue
+                
+                processed_nifs.add(contracting_party['_id'])
             
                 try:
                     entities_col.update_one(
@@ -213,6 +229,10 @@ def main():
                             adjudicatario[lb] = ntp_doc.data[k][ind]
                         adjudicatario['type'] = 'Adjudicatario'
                     logging.debug(adjudicatario)
+                    if nif_ok in processed_nifs:
+                        logging.info(f"Already processed, skipping")
+                        continue
+                    processed_nifs.add(nif_ok)
                     try:
                         entities_col.update_one(
                             {'_id': nif_ok},
