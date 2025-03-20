@@ -351,3 +351,11 @@ def find_previous_doc(data, col):
 def get_md5(contents):
     '''Calculate md5 hash for contents'''
     return hashlib.md5(contents).hexdigest()
+
+def nonewlines(a):
+    '''Remove newlines from string'''
+    return re.sub(r'\s+', '', a)
+
+def datestr(a):
+    '''Convert date to string'''
+    return a.strftime('%Y-%m-%d')
