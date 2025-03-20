@@ -30,7 +30,8 @@ from spanish_dni.dni import DNI
 from spanish_dni.validator.exceptions import NotValidDNIException
 from spanish_dni.validator import validate_dni
 
-API_PREFIX = "https://nextprocurement.bsc.es/api"
+#API_PREFIX = "https://nextprocurement.bsc.es/api"
+API_PREFIX = "https://mdb-login.bsc.es/ntpapi"
 
 DNI_REGEX = r'^(\d{8})([A-Z])$'
 CIF_REGEX = r'^([ABCDEFGHJKLMNPQRSUVW])(\d{7})([0-9A-J])$'
@@ -78,15 +79,17 @@ def process_nif(nif):
             except json.decoder.JSONDecodeError:            
                 logging.error(f"Error decoding JSON for NIF {nif}")
                 return False 
-            print(company_data)
             if 'Nombre_del_Adjudicatario' in company_data:
                 company_data['Name'] = company_data['Nombre_del_Adjudicatario']
                 del(company_data['Nombre_del_Adjudicatario'])
             if 'Nombre' in company_data:
                 company_data['Name'] = company_data['Nombre']
                 del(company_data['Nombre'])
-            company_data['FullName'] = company_data['Name']
-            logging.info(f"NIF/CIF {nif} found as {company_data['Name']}")
+            if 'Name' not in company_data:
+                logging.error(f"Entity Name not found for {nif}")
+            else:
+                company_data['FullName'] = company_data['Name']
+                logging.info(f"NIF/CIF {nif} found as {company_data['Name']}")
             return company_data
         logging.error(f"NIF/CIF {nif} not found as company")
     return False
