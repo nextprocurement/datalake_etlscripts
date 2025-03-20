@@ -38,6 +38,7 @@ def main():
     parser.add_argument('-v','--verbose', action='store_true', help="Add Extra information")
     parser.add_argument('--dry_run', action='store_true', help="Do not alter DB, just check")
     parser.add_argument('--op', action='store', help="merge|add|all" )
+    parser.add_argument('--processed', action='store', help="Processed ids (optional)" )
 
     args = parser.parse_args()
 
@@ -74,6 +75,12 @@ def main():
 
     logging.info(f"New DA documents starting at {id_num}")
 
+    processed_ids = []
+    if args.processed:
+        with open(args.processed, 'r') as proc_file:
+            for line in proc_file:
+                processed_ids.append(line.strip())
+            logging.info(f"Found {len(processed_ids)} already processed ids")
     all_ids = list(gencatDA_col.find({}, projection={"_id": 1}))
     logging.info(f"Found {len(all_ids)} documents in OpenData")
 
@@ -84,6 +91,9 @@ def main():
 
     if args.op == 'merge' or args.op == 'all':
         for doc in matched_ids:
+            if doc['_id'] in processed_ids:
+                logging.info(f"{doc['_id']} already processed, skipping")
+                continue
             da_doc = ntp.NtpEntry()
             da_doc.load_from_db(gencatDA_col, doc['_id'])
             place_doc_id = nu.get_active_version(da_doc.data['id'], place_col)
@@ -96,6 +106,7 @@ def main():
                 for k in da_doc.data.keys():
                     if k in ['indice_unico', '_id']:
                         continue
+
                     if isinstance(da_doc.data[k], list) and len(da_doc.data[k]) == 1:
                         da_doc.data[k] = da_doc.data[k][0]
 
@@ -107,17 +118,33 @@ def main():
 
                     if k not in place_doc.data or not place_doc.data[k]:
                         new.append(k)
-                        logging.debug(f"New field {k} {da_doc.data[k]}")
+                        logging.info(f"New field {k} {da_doc.data[k]}")
                         place_doc.data[k] = da_doc.data[k]
 
-                    elif da_doc.data[k] != place_doc.data[k] and str(da_doc.data[k]) != str(place_doc.data[k]):
+                    elif da_doc.data[k] != place_doc.data[k]:
+                        if f"{k}_gc" in place_doc.data:
+                            del(place_doc.data[f"{k}_gc"])
+                            
+                        #comparing strings with newlines removed and numbers as str
+                        if nu.nonewlines(str(da_doc.data[k])) == nu.nonewlines(str(place_doc.data[k])):
+                            continue
+                        #dates
+                        if 'Fecha' in k and isinstance(da_doc.data[k], str):   
+                            if da_doc.data[k].startswith(place_doc.data[k]):
+                                continue                    
+                        
                         mod.append(k)
-                        logging.debug(f"Modified field {k} {da_doc.data[k]} != {place_doc.data[k]}")
-                        if re.match(r'contrataciopublica.cat', place_doc.data['link']) and 'link' in da_doc.data:
+                        
+                        logging.info(f"Changed field contents {k} {da_doc.data[k]} != {place_doc.data[k]}")
+                        
+                        if k == 'link' and 'contractaciopublica.gencat' in  place_doc.data['link']:
                             place_doc.data['link_old']   = place_doc.data['link']
-                            place_doc.data['link']       = da_do.data['link']
+                            place_doc.data['link']       = da_doc.data['link']
+                            logging.info(f"Added field {k}_old {place_doc.data[k]}")
                         else:
-                            place_doc.data[k] = da_doc.data[k]
+                            place_doc.data[f"{k}_gc"] = da_doc.data[k]
+                            logging.info(f"Added field {k}_gc {da_doc.data[k]}")
+                
                 if not args.dry_run:
                     place_doc.commit_to_db(place_col, update=False)
                     logging.info(f"Updated {place_doc.ntp_id} with DA doc {doc['_id']}")
@@ -128,22 +155,27 @@ def main():
 
     if args.op == 'add' or args.op == 'all':
         for doc in all_ids:
-            if doc in matched_ids:
+            if doc in matched_ids or doc in processed_ids:
                 continue
             da_doc = ntp.NtpEntry()
             da_doc.load_from_db(gencatDA_col, doc['_id'])
-            id_num += 1
-            da_doc.data['id'] = f"/unmatched_gencat/{id_num}"
+            if not da_doc.data['id']:
+                id_num += 1
+                da_doc.data['id'] = f"/unmatched_gencat/{id_num}"
+                da_doc.ntp_order = id_num
+                da_doc.set_ntp_id()
             da_doc.data['tmp_DA_id'] = da_doc.ntp_id
-            da_doc.ntp_order = id_num
-            da_doc.set_ntp_id()
-            da_doc.data['_id'] = da_doc.ntp_id
+            for k in da_doc.data:
+                if isinstance(da_doc.data[k], list) and len(da_doc.data[k]) == 1:
+                    da_doc.data[k] = da_doc.data[k][0]
+                if da_doc.data[k] == 'nan':
+                    da_doc.data[k] = None
 
             if not args.dry_run:
                 da_doc.commit_to_db(place_col, update=False)
-                logging.info(f"Added new document as {da_doc.ntp_id}")
+                logging.info(f"Added/Replaced document as {da_doc.ntp_id}")
             else:
-                logging.info(f"Would add new document as {da_doc.ntp_id}")
+                logging.info(f"Would add/replace document as {da_doc.ntp_id}")
 
 
 
