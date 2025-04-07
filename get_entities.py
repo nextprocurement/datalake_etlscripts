@@ -38,7 +38,7 @@ NIE_REGEX = r'^[XYZ]\d{7,8}[A-Z]$'
 FIELDS = ['Nombre', 'Ubicacion_organica', '']
 
 
-def process_nif(nif):   
+def process_nif(nif):
     nif = str(nif).upper().replace('-','').replace(' ','').replace('.', '')
     logging.info(f"Checking NIF {nif}")
     if re.match(CIF_REGEX, nif):
@@ -101,7 +101,7 @@ def main():
         sys.exit()
 
     entities_col = db_lnk.db.get_collection('entities')
-    
+
     #if args.drop:
     #    entities_col.delete_many({})
 
@@ -129,9 +129,11 @@ def main():
     logging.info(f"Found {len(list_ids)} to process")
 
     processed_nifs = set()
-    for nif in entities_col.find({}, projection={'_id':1}):
-        processed_nifs.add(nif['_id'])
-    logging.info(f"Found {len(processed_nifs)} entities")
+    if not args.replace:
+        for nif in entities_col.find({}, projection={'_id':1}):
+            processed_nifs.add(nif['_id'])
+
+        logging.info(f"Found {len(processed_nifs)} entities")
 
     for doc in sorted(list_ids, key=lambda x: x['_id']):
         ntp_id = doc['_id']
@@ -146,6 +148,7 @@ def main():
         if 'obsolete_version' in ntp_doc.data and ntp_doc.data['obsolete_version']:
             logging.warning(f"{ntp_doc.data['_id']} is marked as obsolete, skipping")
             continue
+
         contracting_party = {}
         contracting_party['other_ids'] = []
         if 'Entidad_Adjudicadora/ID' in ntp_doc.data and ntp_doc.data['Entidad_Adjudicadora/ID']:
@@ -170,7 +173,7 @@ def main():
                 lb = k.replace('Entidad_Adjudicadora/', '')
                 lb = k.replace('Entidad_Adjudicadora_Jerarquia/', 'Jerarquia/')
                 contracting_party[lb] = ntp_doc.data[k]
-                
+
 
             if 'nif' in contracting_party:
                 contracting_party['_id'] = contracting_party['nif'].replace('-', '')
@@ -180,9 +183,16 @@ def main():
                 if contracting_party['_id'] in processed_nifs:
                     logging.info(f"Already processed, skipping")
                     continue
-                
+                if args.replace:
+                    previous_entity = entities_col.find_one({'_id':contracting_party['_id']})
+
+                    for id in previous_entity['Entidad_Adjudicadora/ID']:
+                        if not id in contracting_party['Entidad_Adjudicadora/ID']:
+                            contracting_party['Entidad_Adjudicadora/ID'].append(id)
+
+
                 processed_nifs.add(contracting_party['_id'])
-            
+
                 try:
                     entities_col.update_one(
                         {'_id': contracting_party['_id']},
@@ -209,7 +219,7 @@ def main():
         if 'Adjudicatario/Identificador' in ntp_doc.data and ntp_doc.data['Adjudicatario/Identificador']:
             if not isinstance(ntp_doc.data['Adjudicatario/Identificador'], list):
                 ntp_doc.data['Adjudicatario/Identificador'] = [ntp_doc.data['Adjudicatario/Identificador']]
-                
+
             for ind, nif in enumerate(ntp_doc.data['Adjudicatario/Identificador']):
                 logging.debug(f"{ind}, {nif}")
                 nif_ok = process_nif(nif)
@@ -225,7 +235,7 @@ def main():
                             lb = 'Nombre'
                         if not isinstance(ntp_doc.data[k], list):
                             adjudicatario[lb] = ntp_doc.data[k]
-                        elif len(ntp_doc.data[k]) > ind:                            
+                        elif len(ntp_doc.data[k]) > ind:
                             adjudicatario[lb] = ntp_doc.data[k][ind]
                         adjudicatario['type'] = 'Adjudicatario'
                     logging.debug(adjudicatario)
